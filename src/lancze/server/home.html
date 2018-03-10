@@ -1,8 +1,32 @@
-<h1>Co na lunch?</h1>
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous"/>
+    <style>
+        body {
+            padding: 10px;
+        }
+        h1 {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
 
-<table>
-    <tr><th>Knajpa</th></tr>
+    <h1>Co na lunch?</h1>
+<table class="table">
+    <tr><th>Knajpa</th><th>Dzisiejsza oferta</th><th>Cena</th></tr>
     {{range .}}
     <tr><td>{{.Place}}</td><td>{{.Name}}</td><td>{{.Price}}</td></tr>
     {{end}}
 </table>
+
+
+
+</body>
+
+
+</html>
