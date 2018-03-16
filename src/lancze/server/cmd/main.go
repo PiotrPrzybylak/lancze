@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"net/http"
 	"strings"
+	"os"
 )
 
 func main() {
@@ -52,5 +53,11 @@ func main() {
 		http.Redirect(w, r, "/", 301)
 	})
 
-	println(http.ListenAndServe(":2233", nil))
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "1234"
+	}
+
+
+	println(http.ListenAndServe(":" + port, nil))
 }
