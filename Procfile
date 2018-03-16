@@ -1,0 +1,1 @@
+web: src/lancze/server/cmd/cmd
