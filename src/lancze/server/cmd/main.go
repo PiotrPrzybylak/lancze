@@ -27,7 +27,7 @@ func main() {
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 
-		t, err := template.ParseFiles("home.html")
+		t, err := template.ParseFiles("src/lancze/server/home.html")
 		if err != nil {
 			fmt.Errorf("Error parsing string", err)
 		}
@@ -37,7 +37,7 @@ func main() {
 
 	http.HandleFunc("/admin", func(w http.ResponseWriter, r *http.Request) {
 
-		t, err := template.ParseFiles("admin.html")
+		t, err := template.ParseFiles("src/lancze/server/admin.html")
 		if err != nil {
 			fmt.Errorf("Error parsing string", err)
 		}
