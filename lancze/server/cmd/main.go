@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	_ "github.com/lib/pq"
 	"html"
 	"html/template"
@@ -35,7 +34,7 @@ func main() {
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 
-		t, err := template.ParseFiles("src/lancze/server/home.html")
+		t, err := template.ParseFiles("lancze/server/home.html")
 		if err != nil {
 			panic( err)
 		}
@@ -60,7 +59,7 @@ func main() {
 			names = append(names, name)
 		}
 
-		t, err := template.ParseFiles("src/lancze/server/admin.html")
+		t, err := template.ParseFiles("lancze/server/admin.html")
 		if err != nil {
 			panic( err)
 		}
