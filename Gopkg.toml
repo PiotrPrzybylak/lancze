@@ -34,4 +34,4 @@
   name = "github.com/lib/pq"
 
 [metadata.heroku]
-  root-package = "lancze/server"
+  root-package = "lancze/server/cmd"
