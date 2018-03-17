@@ -37,7 +37,7 @@ func main() {
 
 		t, err := template.ParseFiles("src/lancze/server/home.html")
 		if err != nil {
-			fmt.Errorf("Error parsing string", err)
+			panic( err)
 		}
 
 		t.Execute(w, lunches)
@@ -62,7 +62,7 @@ func main() {
 
 		t, err := template.ParseFiles("src/lancze/server/admin.html")
 		if err != nil {
-			fmt.Errorf("Error parsing string", err)
+			panic( err)
 		}
 
 		t.Execute(w, names)
