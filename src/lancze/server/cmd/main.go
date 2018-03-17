@@ -1,16 +1,24 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
+	_ "github.com/lib/pq"
 	"html"
 	"html/template"
+	"log"
 	"net/http"
-	"strings"
 	"os"
+	"strings"
 )
 
 func main() {
 	println("Hello!")
+
+	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
+	if err != nil {
+		log.Fatalf("Error opening database: %q", err)
+	}
 
 	type Lunch struct {
 		Place string
@@ -37,12 +45,27 @@ func main() {
 
 	http.HandleFunc("/admin", func(w http.ResponseWriter, r *http.Request) {
 
+		rows, err := db.Query("SELECT name FROM places")
+		if err != nil {
+			panic(err)
+		}
+
+		names := []string{}
+		defer rows.Close()
+		for rows.Next() {
+			var name string
+			if err := rows.Scan(&name); err != nil {
+				panic(err)
+			}
+			names = append(names, name)
+		}
+
 		t, err := template.ParseFiles("src/lancze/server/admin.html")
 		if err != nil {
 			fmt.Errorf("Error parsing string", err)
 		}
 
-		t.Execute(w, lunches)
+		t.Execute(w, names)
 	})
 
 	http.HandleFunc("/add", func(w http.ResponseWriter, r *http.Request) {
@@ -58,6 +81,5 @@ func main() {
 		port = "1234"
 	}
 
-
-	println(http.ListenAndServe(":" + port, nil))
+	println(http.ListenAndServe(":"+port, nil))
 }
