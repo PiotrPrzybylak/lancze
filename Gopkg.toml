@@ -32,3 +32,6 @@
 [[constraint]]
   branch = "master"
   name = "github.com/lib/pq"
+
+[metadata.heroku]
+  root-package = "lancze/server"
