@@ -37,25 +37,40 @@ func main() {
 
 		t, err := template.ParseFiles("server/home.html")
 		if err != nil {
-			panic( err)
+			panic(err)
+		}
+
+		placesRows, err := db.Query("SELECT id, name FROM places")
+		if err != nil {
+			panic(err)
+		}
+		defer placesRows.Close()
+
+		places := map[int64]string{}
+		for placesRows.Next() {
+			var name string
+			var placeID int64;
+			if err := placesRows.Scan(&placeID, &name); err != nil {
+				panic(err)
+			}
+			places[placeID] = name;
 		}
 
 		rows, err := db.Query("SELECT offer, place_id FROM offers")
 		if err != nil {
 			panic(err)
 		}
+		defer rows.Close()
 
 		lunches := []Lunch{}
-		defer rows.Close()
 		for rows.Next() {
 			var name string
 			var placeID int64;
 			if err := rows.Scan(&name, &placeID); err != nil {
 				panic(err)
 			}
-			lunches = append(lunches, Lunch{Name: template.HTML(name), Place: strconv.Itoa(int(placeID))})
+			lunches = append(lunches, Lunch{Name: template.HTML(name), Place: places[placeID]})
 		}
-
 
 		t.Execute(w, lunches)
 	})
@@ -79,7 +94,7 @@ func main() {
 
 		t, err := template.ParseFiles("server/admin.html")
 		if err != nil {
-			panic( err)
+			panic(err)
 		}
 
 		t.Execute(w, names)
@@ -97,7 +112,7 @@ func main() {
 		lunches = append(lunches,
 			Lunch{
 				Place: r.Form.Get("restaurant"),
-				Name: template.HTML(strings.Replace(html.EscapeString(r.Form.Get("menu")), "\n", "<br/>", -1)),
+				Name:  template.HTML(strings.Replace(html.EscapeString(r.Form.Get("menu")), "\n", "<br/>", -1)),
 				Price: price})
 		http.Redirect(w, r, "/", 301)
 	})
