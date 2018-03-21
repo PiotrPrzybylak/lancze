@@ -9,6 +9,8 @@ import (
 	"os"
 	"github.com/PiotrPrzybylak/time"
 	gotime "time"
+	"strings"
+	"html"
 )
 
 type Lunch struct {
@@ -24,7 +26,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error opening database: %q", err)
 	}
-
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 
@@ -50,41 +51,30 @@ func main() {
 
 	http.HandleFunc("/admin", func(w http.ResponseWriter, r *http.Request) {
 
-		rows, err := db.Query("SELECT name FROM places")
-		if err != nil {
-			panic(err)
-		}
-
-		names := []string{}
-		defer rows.Close()
-		for rows.Next() {
-			var name string
-			if err := rows.Scan(&name); err != nil {
-				panic(err)
-			}
-			names = append(names, name)
-		}
-
 		t, err := template.ParseFiles("server/admin.html")
 		if err != nil {
 			panic(err)
 		}
 
-		t.Execute(w, names)
+		t.Execute(w, getPlaces(db))
 	})
 
 	http.HandleFunc("/add", func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
-		println(r.Form)
-		println(r.Form.Get("restaurant"))
 
 		if err != nil {
 			panic(err);
 		}
-		//lunches = append(lunches,
-		//	Lunch{
-		//		Place: r.Form.Get("restaurant"),
-		//		Name:  template.HTML(strings.Replace(html.EscapeString(r.Form.Get("menu")), "\n", "<br/>", -1))})
+
+		stmt, err := db.Prepare("INSERT INTO offers(offer, place_id, \"date\") VALUES($1, $2, $3)")
+		if err != nil {
+			panic(err)
+		}
+		menu := template.HTML(strings.Replace(html.EscapeString(r.Form.Get("menu")), "\n", "<br/>", -1))
+		_, err = stmt.Exec(menu, r.Form.Get("place_id"), r.Form.Get("date"))
+		if err != nil {
+			panic(err)
+		}
 		http.Redirect(w, r, "/", 301)
 	})
 
@@ -112,8 +102,8 @@ func getPlaces(db *sql.DB) map[int64]string {
 	}
 	return places
 }
-func getLunches( db *sql.DB, places map[int64]string, date time.LocalDate) []Lunch {
-	rows, err := db.Query("SELECT offer, place_id FROM offers WHERE \"date\" = $1"	, date )
+func getLunches(db *sql.DB, places map[int64]string, date time.LocalDate) []Lunch {
+	rows, err := db.Query("SELECT offer, place_id FROM offers WHERE \"date\" = $1", date)
 	if err != nil {
 		panic(err)
 	}

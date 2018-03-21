@@ -18,10 +18,10 @@
 
     <h1>Co na lunch?</h1>
 <table class="table">
-    <tr><th>Knajpa</th><th>Dzisiejsza oferta</th><th>Cena</th><th></th></tr>
-    <tr><form action="add" method="post"><td><select name="restaurant">
-    {{range .}}<option>{{.}}</option>{{end}}
-    </select></td><td><textarea name="menu"></textarea></td><td><input type="submit"></td></form></tr>
+    <tr><th>Knajpa</th><th>Oferta</th><th>Data</th><th></th></tr>
+    <tr><form action="add" method="post"><td><select name="place_id">
+    {{range $place_id, $place_name := . }}<option value="{{$place_id}}">{{$place_name}}</option>{{end}}
+    </select></td><td><textarea name="menu"></textarea></td><td><input name="date" type="date"></td><td><input type="submit"></td></form></tr>
 </table>
 
 
