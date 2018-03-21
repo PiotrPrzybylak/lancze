@@ -40,6 +40,23 @@ func main() {
 			panic( err)
 		}
 
+		rows, err := db.Query("SELECT offer, place_id FROM offers")
+		if err != nil {
+			panic(err)
+		}
+
+		lunches := []Lunch{}
+		defer rows.Close()
+		for rows.Next() {
+			var name string
+			var placeID int64;
+			if err := rows.Scan(&name, &placeID); err != nil {
+				panic(err)
+			}
+			lunches = append(lunches, Lunch{Name: template.HTML(name), Place: strconv.Itoa(int(placeID))})
+		}
+
+
 		t.Execute(w, lunches)
 	})
 
