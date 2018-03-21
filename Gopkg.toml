@@ -37,3 +37,6 @@
   root-package = "github.com/PiotrPrzybylak/lancze/lancze/server/cmd"
   go-version = "1.10.0"
   install = [ "./..." ]
+[[constraint]]
+  branch = "master"
+  name = "github.com/PiotrPrzybylak/time"

@@ -3,14 +3,19 @@ package main
 import (
 	"database/sql"
 	_ "github.com/lib/pq"
-	"html"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
-	"strings"
-	"strconv"
+	"github.com/PiotrPrzybylak/time"
+	gotime "time"
 )
+
+type Lunch struct {
+	Place string
+	Name  template.HTML
+	Price float64
+}
 
 func main() {
 	println("Hello!")
@@ -20,18 +25,6 @@ func main() {
 		log.Fatalf("Error opening database: %q", err)
 	}
 
-	type Lunch struct {
-		Place string
-		Name  template.HTML
-		Price float64
-	}
-
-	lunches := []Lunch{{"Restauracja Kolorowa", "✔️ consome wołowe z makaronem ryżowym ✔️ pilaw warzywny z kaszy pęczak z dynią", 11},
-		{"Sznycelek", "Schabowy", 12.99},
-		{"Sznycelek", "Schabowy", 12.99},
-		{"Sznycelek", "Schabowy", 12.99},
-		{"Sznycelek", "✔️ zupa pieczarkowa <br/> ✔️ spaghetti di mare", 19.00},
-		{"Sznycelek", "✔️ zupa pieczarkowa ✔️ spaghetti di mare", 12.99}}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 
@@ -40,37 +33,17 @@ func main() {
 			panic(err)
 		}
 
-		placesRows, err := db.Query("SELECT id, name FROM places")
-		if err != nil {
-			panic(err)
-		}
-		defer placesRows.Close()
-
-		places := map[int64]string{}
-		for placesRows.Next() {
-			var name string
-			var placeID int64;
-			if err := placesRows.Scan(&placeID, &name); err != nil {
-				panic(err)
-			}
-			places[placeID] = name;
+		dateString := r.URL.Query().Get("date")
+		var date time.LocalDate
+		if dateString == "" {
+			date = time.NewLocalDate(gotime.Now().Date())
+		} else {
+			date = time.MustParseLocalDate(dateString)
 		}
 
-		rows, err := db.Query("SELECT offer, place_id FROM offers")
-		if err != nil {
-			panic(err)
-		}
-		defer rows.Close()
+		places := getPlaces(db)
 
-		lunches := []Lunch{}
-		for rows.Next() {
-			var name string
-			var placeID int64;
-			if err := rows.Scan(&name, &placeID); err != nil {
-				panic(err)
-			}
-			lunches = append(lunches, Lunch{Name: template.HTML(name), Place: places[placeID]})
-		}
+		lunches := getLunches(db, places, date)
 
 		t.Execute(w, lunches)
 	})
@@ -108,10 +81,10 @@ func main() {
 		if err != nil {
 			panic(err);
 		}
-		lunches = append(lunches,
-			Lunch{
-				Place: r.Form.Get("restaurant"),
-				Name:  template.HTML(strings.Replace(html.EscapeString(r.Form.Get("menu")), "\n", "<br/>", -1))})
+		//lunches = append(lunches,
+		//	Lunch{
+		//		Place: r.Form.Get("restaurant"),
+		//		Name:  template.HTML(strings.Replace(html.EscapeString(r.Form.Get("menu")), "\n", "<br/>", -1))})
 		http.Redirect(w, r, "/", 301)
 	})
 
@@ -121,4 +94,38 @@ func main() {
 	}
 
 	println(http.ListenAndServe(":"+port, nil))
+}
+func getPlaces(db *sql.DB) map[int64]string {
+	placesRows, err := db.Query("SELECT id, name FROM places")
+	if err != nil {
+		panic(err)
+	}
+	defer placesRows.Close()
+	places := map[int64]string{}
+	for placesRows.Next() {
+		var name string
+		var placeID int64;
+		if err := placesRows.Scan(&placeID, &name); err != nil {
+			panic(err)
+		}
+		places[placeID] = name;
+	}
+	return places
+}
+func getLunches( db *sql.DB, places map[int64]string, date time.LocalDate) []Lunch {
+	rows, err := db.Query("SELECT offer, place_id FROM offers WHERE \"date\" = $1"	, date )
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+	lunches := []Lunch{}
+	for rows.Next() {
+		var name string
+		var placeID int64;
+		if err := rows.Scan(&name, &placeID); err != nil {
+			panic(err)
+		}
+		lunches = append(lunches, Lunch{Name: template.HTML(name), Place: places[placeID]})
+	}
+	return lunches
 }
