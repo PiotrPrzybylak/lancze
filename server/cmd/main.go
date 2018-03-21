@@ -105,15 +105,13 @@ func main() {
 		println(r.Form)
 		println(r.Form.Get("restaurant"))
 
-		price, err := strconv.ParseFloat(r.Form.Get("price"), 64);
 		if err != nil {
 			panic(err);
 		}
 		lunches = append(lunches,
 			Lunch{
 				Place: r.Form.Get("restaurant"),
-				Name:  template.HTML(strings.Replace(html.EscapeString(r.Form.Get("menu")), "\n", "<br/>", -1)),
-				Price: price})
+				Name:  template.HTML(strings.Replace(html.EscapeString(r.Form.Get("menu")), "\n", "<br/>", -1))})
 		http.Redirect(w, r, "/", 301)
 	})
 
