@@ -59,6 +59,36 @@ func main() {
 		t.Execute(w, getPlaces(db))
 	})
 
+	http.HandleFunc("/admin/places", func(w http.ResponseWriter, r *http.Request) {
+
+		t, err := template.ParseFiles("server/places.html")
+		if err != nil {
+			panic(err)
+		}
+
+		t.Execute(w, getPlaces(db))
+	})
+
+	http.HandleFunc("/admin/place", func(w http.ResponseWriter, r *http.Request) {
+
+		t, err := template.ParseFiles("server/place.html")
+		if err != nil {
+			panic(err)
+		}
+
+		now := gotime.Now()
+		today := time.NewLocalDate(now.Date())
+		id := r.URL.Query().Get("id")
+
+		values := map[string]interface{}{}
+		values["id"] = id
+		values["today"] = today
+
+		print(values)
+
+		t.Execute(w, values);
+	})
+
 	http.HandleFunc("/add", func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 
