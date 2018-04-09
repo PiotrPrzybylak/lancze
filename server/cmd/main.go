@@ -32,7 +32,10 @@ type Client struct {
 
 const loginPage = "<html><head><title>Login</title></head><body><form action=\"login\" method=\"post\"> <input type=\"password\" name=\"password\" /> <input type=\"submit\" value=\"login\" /> </form> </body> </html>"
 
+
+
 func main() {
+
 
 	sessionStore = make(map[string]Client)
 
@@ -174,6 +177,22 @@ type authenticationMiddleware struct {
 }
 
 func (h authenticationMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+
+
+	var epoch = gotime.Unix(0, 0).Format(gotime.RFC1123)
+
+	var noCacheHeaders = map[string]string{
+		"Expires":         epoch,
+		"Cache-Control":   "no-cache, private, max-age=0",
+		"Pragma":          "no-cache",
+		"X-Accel-Expires": "0",
+	}
+
+	for k, v := range noCacheHeaders {
+		w.Header().Set(k, v)
+	}
+
 	cookie, err := r.Cookie("session")
 	if err != nil {
 		if err != http.ErrNoCookie {
@@ -271,6 +290,20 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleLogout(w http.ResponseWriter, r *http.Request) {
+
+
+	var epoch = gotime.Unix(0, 0).Format(gotime.RFC1123)
+
+	var noCacheHeaders = map[string]string{
+		"Expires":         epoch,
+		"Cache-Control":   "no-cache, private, max-age=0",
+		"Pragma":          "no-cache",
+		"X-Accel-Expires": "0",
+	}
+
+	for k, v := range noCacheHeaders {
+		w.Header().Set(k, v)
+	}
 
 	cookie, err := r.Cookie("session")
 	if err != nil {
