@@ -11,6 +11,9 @@ import (
 	gotime "time"
 	"strings"
 	"html"
+	"sync"
+	fmt "fmt"
+	"crypto/subtle"
 )
 
 type Lunch struct {
@@ -19,7 +22,20 @@ type Lunch struct {
 	Price float64
 }
 
+var sessionStore map[string]Client
+var storageMutex sync.RWMutex
+
+type Client struct {
+	loggedIn bool
+}
+
+const loginPage = "<html><head><title>Login</title></head><body><form action=\"login\" method=\"post\"> <input type=\"password\" name=\"password\" /> <input type=\"submit\" value=\"login\" /> </form> </body> </html>"
+
+
 func main() {
+
+	sessionStore = make(map[string]Client)
+
 	println("Hello!")
 
 	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
@@ -49,7 +65,7 @@ func main() {
 		t.Execute(w, lunches)
 	})
 
-	http.HandleFunc("/admin", func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/admin", authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		t, err := template.ParseFiles("server/admin.html")
 		if err != nil {
@@ -57,9 +73,9 @@ func main() {
 		}
 
 		t.Execute(w, getPlaces(db))
-	})
+	})))
 
-	http.HandleFunc("/admin/places", func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/admin/places", authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		t, err := template.ParseFiles("server/places.html")
 		if err != nil {
@@ -67,9 +83,9 @@ func main() {
 		}
 
 		t.Execute(w, getPlaces(db))
-	})
+	})))
 
-	http.HandleFunc("/admin/place", func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/admin/place", authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		t, err := template.ParseFiles("server/place.html")
 		if err != nil {
@@ -87,9 +103,9 @@ func main() {
 		print(values)
 
 		t.Execute(w, values);
-	})
+	})))
 
-	http.HandleFunc("/add", func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/add", authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 
 		if err != nil {
@@ -106,7 +122,10 @@ func main() {
 			panic(err)
 		}
 		http.Redirect(w, r, "/", 301)
-	})
+	})))
+
+
+	http.HandleFunc("/login", handleLogin)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -148,4 +167,107 @@ func getLunches(db *sql.DB, places map[int64]string, date time.LocalDate) []Lunc
 		lunches = append(lunches, Lunch{Name: template.HTML(name), Place: places[placeID]})
 	}
 	return lunches
+}
+
+
+
+type authenticationMiddleware struct {
+	wrappedHandler http.Handler
+}
+
+func (h authenticationMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("session")
+	if err != nil {
+		if err != http.ErrNoCookie {
+			fmt.Fprint(w, err)
+			return
+		} else {
+			err = nil
+		}
+	}
+
+	var present bool
+	var client Client
+	if cookie != nil {
+		storageMutex.RLock()
+		client, present = sessionStore[cookie.Value]
+		storageMutex.RUnlock()
+	} else {
+		present = false
+	}
+
+	if present == false {
+		cookie = &http.Cookie{
+			Name:  "session",
+			Value: "DUUUUUPAAA",
+		}
+		client = Client{false}
+		storageMutex.Lock()
+		sessionStore[cookie.Value] = client
+		storageMutex.Unlock()
+	}
+
+	http.SetCookie(w, cookie)
+	if client.loggedIn == false {
+		fmt.Fprint(w, loginPage)
+		return
+	}
+	if client.loggedIn == true {
+		h.wrappedHandler.ServeHTTP(w, r)
+		return
+	}
+
+}
+
+func authenticate(h http.Handler) authenticationMiddleware {
+	return authenticationMiddleware{h}
+}
+
+func handleLogin(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("session")
+	if err != nil {
+		if err != http.ErrNoCookie {
+			fmt.Fprint(w, err)
+			return
+		} else {
+			err = nil
+		}
+	}
+	var present bool
+	var client Client
+	if cookie != nil {
+		storageMutex.RLock()
+		client, present = sessionStore[cookie.Value]
+		storageMutex.RUnlock()
+	} else {
+		present = false
+	}
+
+	if present == false {
+		cookie = &http.Cookie{
+			Name:  "session",
+			Value: "aaaaaaaaaaaaaaaaaaaaaaa",
+		}
+		client = Client{false}
+		storageMutex.Lock()
+		sessionStore[cookie.Value] = client
+		storageMutex.Unlock()
+	}
+	http.SetCookie(w, cookie)
+	err = r.ParseForm()
+	if err != nil {
+		fmt.Fprint(w, err)
+		return
+	}
+
+	if subtle.ConstantTimeCompare([]byte(r.FormValue("password")), []byte("password123")) == 1 {
+		client.loggedIn = true
+		fmt.Fprintln(w, "Thank you for logging in.")
+		storageMutex.Lock()
+		sessionStore[cookie.Value] = client
+		storageMutex.Unlock()
+	} else {
+		fmt.Fprintln(w, "Wrong password.")
+	}
+
 }
