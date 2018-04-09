@@ -12,8 +12,9 @@ import (
 	"strings"
 	"html"
 	"sync"
-	fmt "fmt"
+	"fmt"
 	"crypto/subtle"
+	"github.com/satori/go.uuid"
 )
 
 type Lunch struct {
@@ -30,7 +31,6 @@ type Client struct {
 }
 
 const loginPage = "<html><head><title>Login</title></head><body><form action=\"login\" method=\"post\"> <input type=\"password\" name=\"password\" /> <input type=\"submit\" value=\"login\" /> </form> </body> </html>"
-
 
 func main() {
 
@@ -124,8 +124,8 @@ func main() {
 		http.Redirect(w, r, "/", 301)
 	})))
 
-
 	http.HandleFunc("/login", handleLogin)
+	http.HandleFunc("/logout", handleLogout)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -169,8 +169,6 @@ func getLunches(db *sql.DB, places map[int64]string, date time.LocalDate) []Lunc
 	return lunches
 }
 
-
-
 type authenticationMiddleware struct {
 	wrappedHandler http.Handler
 }
@@ -199,7 +197,7 @@ func (h authenticationMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Reque
 	if present == false {
 		cookie = &http.Cookie{
 			Name:  "session",
-			Value: "DUUUUUPAAA",
+			Value: uuid.NewV4().String(),
 		}
 		client = Client{false}
 		storageMutex.Lock()
@@ -246,7 +244,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	if present == false {
 		cookie = &http.Cookie{
 			Name:  "session",
-			Value: "aaaaaaaaaaaaaaaaaaaaaaa",
+			Value: uuid.NewV4().String(),
 		}
 		client = Client{false}
 		storageMutex.Lock()
@@ -262,12 +260,43 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	if subtle.ConstantTimeCompare([]byte(r.FormValue("password")), []byte("password123")) == 1 {
 		client.loggedIn = true
-		fmt.Fprintln(w, "Thank you for logging in.")
 		storageMutex.Lock()
 		sessionStore[cookie.Value] = client
 		storageMutex.Unlock()
+		http.Redirect(w, r, "/admin/places/", 301)
 	} else {
 		fmt.Fprintln(w, "Wrong password.")
 	}
+
+}
+
+func handleLogout(w http.ResponseWriter, r *http.Request) {
+
+	cookie, err := r.Cookie("session")
+	if err != nil {
+		if err != http.ErrNoCookie {
+			fmt.Fprint(w, err)
+			return
+		} else {
+			err = nil
+		}
+	}
+
+	var present bool
+	if cookie != nil {
+		storageMutex.RLock()
+		_, present = sessionStore[cookie.Value]
+		storageMutex.RUnlock()
+	} else {
+		present = false
+	}
+
+	if present == true {
+		client := Client{false}
+		storageMutex.Lock()
+		sessionStore[cookie.Value] = client
+		storageMutex.Unlock()
+	}
+	http.Redirect(w, r, "/admin/places/", 301)
 
 }
