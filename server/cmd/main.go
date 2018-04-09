@@ -128,6 +128,7 @@ func main() {
 	})))
 
 	http.HandleFunc("/login", handleLogin)
+	http.HandleFunc("/admin/login", handleLogin)
 	http.HandleFunc("/logout", handleLogout)
 
 	port := os.Getenv("PORT")
