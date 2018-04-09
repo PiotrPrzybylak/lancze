@@ -19,7 +19,7 @@
     <h1>Co na lunch?</h1>
 
     <ul>
-    {{range $place_id, $place_name := . }}<li><a href="/admin/place/{{$place_id}}">{{$place_name}}</a></li>{{end}}
+    {{range $place_id, $place_name := . }}<li><a href="/admin/place?id={{$place_id}}">{{$place_name}}</a></li>{{end}}
     </ul>
 
 
