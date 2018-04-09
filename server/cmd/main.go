@@ -263,7 +263,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		storageMutex.Lock()
 		sessionStore[cookie.Value] = client
 		storageMutex.Unlock()
-		http.Redirect(w, r, "/admin/places/", 301)
+		http.Redirect(w, r, "/admin/places", 301)
 	} else {
 		fmt.Fprintln(w, "Wrong password.")
 	}
@@ -297,6 +297,6 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 		sessionStore[cookie.Value] = client
 		storageMutex.Unlock()
 	}
-	http.Redirect(w, r, "/admin/places/", 301)
+	http.Redirect(w, r, "/", 301)
 
 }
