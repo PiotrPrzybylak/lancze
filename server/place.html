@@ -23,7 +23,7 @@
         <tr><th>Knajpa</th><th>Oferta</th><th>Data</th><th></th></tr>
         <tr><form action="../add" method="post"><td>
                 <input type="hidden" value="{{.id}}" name="place_id">{{.id}}
-        </td><td><textarea name="menu"></textarea></td><td>{{.today}} <input name="date" type="hidden" value="{{.today}}"></td><td><input type="submit"></td></form></tr>
+        </td><td><textarea name="menu">{{.offer}}</textarea></td><td>{{.today}} <input name="date" type="hidden" value="{{.today}}"></td><td><input type="submit"></td></form></tr>
     </table>
 
 </body>

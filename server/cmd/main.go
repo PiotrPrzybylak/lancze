@@ -1,20 +1,21 @@
 package main
 
 import (
+	"crypto/subtle"
 	"database/sql"
+	"fmt"
+	"github.com/PiotrPrzybylak/time"
 	_ "github.com/lib/pq"
+	"github.com/satori/go.uuid"
+	"html"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
-	"github.com/PiotrPrzybylak/time"
-	gotime "time"
+	"strconv"
 	"strings"
-	"html"
 	"sync"
-	"fmt"
-	"crypto/subtle"
-	"github.com/satori/go.uuid"
+	gotime "time"
 )
 
 type Lunch struct {
@@ -32,10 +33,7 @@ type Client struct {
 
 const loginPage = "<html><head><title>Login</title></head><body><form action=\"login\" method=\"post\"> <input type=\"password\" name=\"password\" /> <input type=\"submit\" value=\"login\" /> </form> </body> </html>"
 
-
-
 func main() {
-
 
 	sessionStore = make(map[string]Client)
 
@@ -102,27 +100,50 @@ func main() {
 		values := map[string]interface{}{}
 		values["id"] = id
 		values["today"] = today
+		i, err := strconv.Atoi(id)
+		if err != nil {
+			panic(err)
+		}
+		values["offer"] = getLunch(db, today, int64(i))
 
 		print(values)
 
-		t.Execute(w, values);
+		t.Execute(w, values)
 	})))
 
 	http.Handle("/add", authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 
 		if err != nil {
-			panic(err);
+			panic(err)
 		}
 
-		stmt, err := db.Prepare("INSERT INTO offers(offer, place_id, \"date\") VALUES($1, $2, $3)")
+		sqlStatement := `
+UPDATE offers
+SET offer = $1
+WHERE place_id = $2 AND "date" = $3`
+		res, err := db.Exec(sqlStatement, strings.Replace(html.EscapeString(r.Form.Get("menu")), "\n", "<br/>", -1), r.Form.Get("place_id"), r.Form.Get("date"))
 		if err != nil {
 			panic(err)
 		}
-		menu := template.HTML(strings.Replace(html.EscapeString(r.Form.Get("menu")), "\n", "<br/>", -1))
-		_, err = stmt.Exec(menu, r.Form.Get("place_id"), r.Form.Get("date"))
+
+		fmt.Printf("TEST 123")
+
+		count, err := res.RowsAffected()
 		if err != nil {
 			panic(err)
+		}
+		fmt.Printf("counter: %d\n", int(count))
+		if count == 0 {
+			stmt, err := db.Prepare("INSERT INTO offers(offer, place_id, \"date\") VALUES($1, $2, $3)")
+			if err != nil {
+				panic(err)
+			}
+			menu := template.HTML(strings.Replace(html.EscapeString(r.Form.Get("menu")), "\n", "<br/>", -1))
+			_, err = stmt.Exec(menu, r.Form.Get("place_id"), r.Form.Get("date"))
+			if err != nil {
+				panic(err)
+			}
 		}
 		http.Redirect(w, r, "/", 301)
 	})))
@@ -147,11 +168,11 @@ func getPlaces(db *sql.DB) map[int64]string {
 	places := map[int64]string{}
 	for placesRows.Next() {
 		var name string
-		var placeID int64;
+		var placeID int64
 		if err := placesRows.Scan(&placeID, &name); err != nil {
 			panic(err)
 		}
-		places[placeID] = name;
+		places[placeID] = name
 	}
 	return places
 }
@@ -164,7 +185,7 @@ func getLunches(db *sql.DB, places map[int64]string, date time.LocalDate) []Lunc
 	lunches := []Lunch{}
 	for rows.Next() {
 		var name string
-		var placeID int64;
+		var placeID int64
 		if err := rows.Scan(&name, &placeID); err != nil {
 			panic(err)
 		}
@@ -173,13 +194,24 @@ func getLunches(db *sql.DB, places map[int64]string, date time.LocalDate) []Lunc
 	return lunches
 }
 
+func getLunch(db *sql.DB, date time.LocalDate, placeID int64) string {
+	var offer string
+	err := db.QueryRow("SELECT offer FROM offers WHERE \"date\" = $1 AND place_id = $2", date, placeID).Scan(&offer)
+	if err == sql.ErrNoRows {
+		return ""
+	}
+	if err != nil {
+		panic(err)
+	}
+	offer = strings.Replace(offer, "<br/>", "\n", -1)
+	return offer
+}
+
 type authenticationMiddleware struct {
 	wrappedHandler http.Handler
 }
 
 func (h authenticationMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
-
 
 	var epoch = gotime.Unix(0, 0).Format(gotime.RFC1123)
 
@@ -291,7 +323,6 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleLogout(w http.ResponseWriter, r *http.Request) {
-
 
 	var epoch = gotime.Unix(0, 0).Format(gotime.RFC1123)
 
