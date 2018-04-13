@@ -111,7 +111,7 @@ func main() {
 		t.Execute(w, values)
 	})))
 
-	http.Handle("/add", authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/admin/add", authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 
 		if err != nil {
@@ -150,7 +150,7 @@ WHERE place_id = $2 AND "date" = $3`
 
 	http.HandleFunc("/login", handleLogin)
 	http.HandleFunc("/admin/login", handleLogin)
-	http.HandleFunc("/logout", handleLogout)
+	http.HandleFunc("/admin/logout", handleLogout)
 
 	port := os.Getenv("PORT")
 	if port == "" {
