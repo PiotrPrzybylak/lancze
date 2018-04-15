@@ -66,6 +66,28 @@ func main() {
 		t.Execute(w, lunches)
 	})
 
+	http.HandleFunc("/v2", func(w http.ResponseWriter, r *http.Request) {
+
+		t, err := template.ParseFiles("server/templates/v2/index.html")
+		if err != nil {
+			panic(err)
+		}
+
+		dateString := r.URL.Query().Get("date")
+		var date time.LocalDate
+		if dateString == "" {
+			date = time.NewLocalDate(gotime.Now().Date())
+		} else {
+			date = time.MustParseLocalDate(dateString)
+		}
+
+		places := getPlaces(db)
+
+		lunches := getLunches(db, places, date)
+
+		t.Execute(w, lunches)
+	})
+
 	http.Handle("/admin", authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		t, err := template.ParseFiles("server/admin.html")
@@ -152,10 +174,14 @@ WHERE place_id = $2 AND "date" = $3`
 	http.HandleFunc("/admin/login", handleLogin)
 	http.HandleFunc("/admin/logout", handleLogout)
 
+	fs := http.FileServer(http.Dir("server/static"))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "1234"
 	}
+
 
 	println(http.ListenAndServe(":"+port, nil))
 }
