@@ -296,6 +296,22 @@
 						<div class="fh5co-food-menu to-animate-2">
 							<h2 class="fh5co-drinks">Drinks</h2>
 							<ul>
+							{{range .}}
+									<li>
+                                <div class="fh5co-food-desc">
+                                    <figure>
+                                        <img src="/static/foodee/images/res_img_5.jpg" class="img-responsive" alt="Free HTML5 Templates by FREEHTML5.co">
+                                    </figure>
+                                    <div>
+                                        <h3>{{.Place}}</h3>
+                                        <p>{{.Name}}</p>
+                                    </div>
+                                </div>
+                                <div class="fh5co-food-pricing">
+                                    {{.Price}} PLN
+                                </div>
+									</li>
+							{{end}}
 								<li>
 									<div class="fh5co-food-desc">
 										<figure>
@@ -345,195 +361,6 @@
 										</figure>
 										<div>
 											<h3>Carlo Rosee Drinks</h3>
-											<p>Far far away, behind the word mountains.</p>
-										</div>
-									</div>
-									<div class="fh5co-food-pricing">
-										$12.99
-									</div>
-								</li>
-							</ul>
-						</div>
-					</div>
-					<div class="col-md-6">
-						<div class="fh5co-food-menu to-animate-2">
-							<h2 class="fh5co-dishes">Steak</h2>
-							<ul>
-								<li>
-									<div class="fh5co-food-desc">
-										<figure>
-											<img src="/static/foodee/images/res_img_3.jpg" class="img-responsive" alt="Free HTML5 Templates by FREEHTML5.co">
-										</figure>
-										<div>
-											<h3>Beef Steak</h3>
-											<p>Far far away, behind the word mountains.</p>
-										</div>
-									</div>
-									<div class="fh5co-food-pricing">
-										$17.50
-									</div>
-								</li>
-								<li>
-									<div class="fh5co-food-desc">
-										<figure>
-											<img src="/static/foodee/images/res_img_4.jpg" class="img-responsive" alt="Free HTML5 Templates by FREEHTML5.co">
-										</figure>
-										<div>
-											<h3>Tomato with Chicken</h3>
-											<p>Far far away, behind the word mountains.</p>
-										</div>
-									</div>
-									<div class="fh5co-food-pricing">
-										$7.99
-									</div>
-								</li>
-								<li>
-									<div class="fh5co-food-desc">
-										<figure>
-											<img src="/static/foodee/images/res_img_2.jpg" class="img-responsive" alt="Free HTML5 Templates by FREEHTML5.co">
-										</figure>
-										<div>
-											<h3>Sausages from Italy</h3>
-											<p>Far far away, behind the word mountains.</p>
-										</div>
-									</div>
-									<div class="fh5co-food-pricing">
-										$12.99
-									</div>
-								</li>
-								<li>
-									<div class="fh5co-food-desc">
-										<figure>
-											<img src="/static/foodee/images/res_img_8.jpg" class="img-responsive" alt="Free HTML5 Templates by FREEHTML5.co">
-										</figure>
-										<div>
-											<h3>Beef Grilled</h3>
-											<p>Far far away, behind the word mountains.</p>
-										</div>
-									</div>
-									<div class="fh5co-food-pricing">
-										$12.99
-									</div>
-								</li>
-							</ul>
-						</div>
-					</div>
-					<div class="col-md-6">
-						<div class="fh5co-food-menu to-animate-2">
-							<h2 class="fh5co-drinks">Drinks</h2>
-							<ul>
-								<li>
-									<div class="fh5co-food-desc">
-										<figure>
-											<img src="/static/foodee/images/res_img_5.jpg" class="img-responsive" alt="Free HTML5 Templates by FREEHTML5.co">
-										</figure>
-										<div>
-											<h3>Pineapple Juice</h3>
-											<p>Far far away, behind the word mountains.</p>
-										</div>
-									</div>
-									<div class="fh5co-food-pricing">
-										$17.50
-									</div>
-								</li>
-								<li>
-									<div class="fh5co-food-desc">
-										<figure>
-											<img src="/static/foodee/images/res_img_6.jpg" class="img-responsive" alt="Free HTML5 Templates by FREEHTML5.co">
-										</figure>
-										<div>
-											<h3>Green Juice</h3>
-											<p>Far far away, behind the word mountains.</p>
-										</div>
-									</div>
-									<div class="fh5co-food-pricing">
-										$7.99
-									</div>
-								</li>
-								<li>
-									<div class="fh5co-food-desc">
-										<figure>
-											<img src="/static/foodee/images/res_img_7.jpg" class="img-responsive" alt="Free HTML5 Templates by FREEHTML5.co">
-										</figure>
-										<div>
-											<h3>Soft Drinks</h3>
-											<p>Far far away, behind the word mountains.</p>
-										</div>
-									</div>
-									<div class="fh5co-food-pricing">
-										$12.99
-									</div>
-								</li>
-								<li>
-									<div class="fh5co-food-desc">
-										<figure>
-											<img src="/static/foodee/images/res_img_5.jpg" class="img-responsive" alt="Free HTML5 Templates by FREEHTML5.co">
-										</figure>
-										<div>
-											<h3>Carlo Rosee Drinks</h3>
-											<p>Far far away, behind the word mountains.</p>
-										</div>
-									</div>
-									<div class="fh5co-food-pricing">
-										$12.99
-									</div>
-								</li>
-							</ul>
-						</div>
-					</div>
-					<div class="col-md-6">
-						<div class="fh5co-food-menu to-animate-2">
-							<h2 class="fh5co-dishes">Steak</h2>
-							<ul>
-								<li>
-									<div class="fh5co-food-desc">
-										<figure>
-											<img src="/static/foodee/images/res_img_3.jpg" class="img-responsive" alt="Free HTML5 Templates by FREEHTML5.co">
-										</figure>
-										<div>
-											<h3>Beef Steak</h3>
-											<p>Far far away, behind the word mountains.</p>
-										</div>
-									</div>
-									<div class="fh5co-food-pricing">
-										$17.50
-									</div>
-								</li>
-								<li>
-									<div class="fh5co-food-desc">
-										<figure>
-											<img src="/static/foodee/images/res_img_4.jpg" class="img-responsive" alt="Free HTML5 Templates by FREEHTML5.co">
-										</figure>
-										<div>
-											<h3>Tomato with Chicken</h3>
-											<p>Far far away, behind the word mountains.</p>
-										</div>
-									</div>
-									<div class="fh5co-food-pricing">
-										$7.99
-									</div>
-								</li>
-								<li>
-									<div class="fh5co-food-desc">
-										<figure>
-											<img src="/static/foodee/images/res_img_2.jpg" class="img-responsive" alt="Free HTML5 Templates by FREEHTML5.co">
-										</figure>
-										<div>
-											<h3>Sausages from Italy</h3>
-											<p>Far far away, behind the word mountains.</p>
-										</div>
-									</div>
-									<div class="fh5co-food-pricing">
-										$12.99
-									</div>
-								</li>
-								<li>
-									<div class="fh5co-food-desc">
-										<figure>
-											<img src="/static/foodee/images/res_img_8.jpg" class="img-responsive" alt="Free HTML5 Templates by FREEHTML5.co">
-										</figure>
-										<div>
-											<h3>Beef Grilled</h3>
 											<p>Far far away, behind the word mountains.</p>
 										</div>
 									</div>

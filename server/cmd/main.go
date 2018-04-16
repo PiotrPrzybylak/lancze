@@ -45,47 +45,16 @@ func main() {
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		renderHome("server/home.html", r, db, w)
 
-		t, err := template.ParseFiles("server/home.html")
-		if err != nil {
-			panic(err)
-		}
-
-		dateString := r.URL.Query().Get("date")
-		var date time.LocalDate
-		if dateString == "" {
-			date = time.NewLocalDate(gotime.Now().Date())
-		} else {
-			date = time.MustParseLocalDate(dateString)
-		}
-
-		places := getPlaces(db)
-
-		lunches := getLunches(db, places, date)
-
-		t.Execute(w, lunches)
 	})
 
 	http.HandleFunc("/v2", func(w http.ResponseWriter, r *http.Request) {
+		renderHome("server/templates/v2/index.html", r, db, w)
+	})
 
-		t, err := template.ParseFiles("server/templates/v2/index.html")
-		if err != nil {
-			panic(err)
-		}
-
-		dateString := r.URL.Query().Get("date")
-		var date time.LocalDate
-		if dateString == "" {
-			date = time.NewLocalDate(gotime.Now().Date())
-		} else {
-			date = time.MustParseLocalDate(dateString)
-		}
-
-		places := getPlaces(db)
-
-		lunches := getLunches(db, places, date)
-
-		t.Execute(w, lunches)
+	http.HandleFunc("/v3", func(w http.ResponseWriter, r *http.Request) {
+		renderHome("server/homev3.html", r, db, w)
 	})
 
 	http.Handle("/admin", authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -141,9 +110,9 @@ func main() {
 		}
 
 		sqlStatement := `
-UPDATE offers
-SET offer = $1
-WHERE place_id = $2 AND "date" = $3`
+		UPDATE offers
+		SET offer = $1
+		WHERE place_id = $2 AND "date" = $3`
 		res, err := db.Exec(sqlStatement, strings.Replace(html.EscapeString(r.Form.Get("menu")), "\n", "<br/>", -1), r.Form.Get("place_id"), r.Form.Get("date"))
 		if err != nil {
 			panic(err)
@@ -182,8 +151,24 @@ WHERE place_id = $2 AND "date" = $3`
 		port = "1234"
 	}
 
-
 	println(http.ListenAndServe(":"+port, nil))
+}
+
+func renderHome(home_template string, r *http.Request, db *sql.DB, w http.ResponseWriter) {
+	t, err := template.ParseFiles(home_template)
+	if err != nil {
+		panic(err)
+	}
+	dateString := r.URL.Query().Get("date")
+	var date time.LocalDate
+	if dateString == "" {
+		date = time.NewLocalDate(gotime.Now().Date())
+	} else {
+		date = time.MustParseLocalDate(dateString)
+	}
+	places := getPlaces(db)
+	lunches := getLunches(db, places, date)
+	t.Execute(w, lunches)
 }
 func getPlaces(db *sql.DB) map[int64]string {
 	placesRows, err := db.Query("SELECT id, name FROM places")
