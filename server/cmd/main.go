@@ -21,7 +21,7 @@ import (
 type Lunch struct {
 	Place string
 	Name  template.HTML
-	Price float64
+	Price int
 }
 
 var sessionStore map[string]Client
@@ -200,7 +200,7 @@ func getLunches(db *sql.DB, places map[int64]string, date time.LocalDate) []Lunc
 		if err := rows.Scan(&name, &placeID); err != nil {
 			panic(err)
 		}
-		lunches = append(lunches, Lunch{Name: template.HTML(name), Place: places[placeID]})
+		lunches = append(lunches, Lunch{Name: template.HTML(name), Place: places[placeID], Price: 19})
 	}
 	return lunches
 }

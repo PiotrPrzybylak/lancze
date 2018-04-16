@@ -33,10 +33,10 @@
 <div class="dania"><h1>W ŁODZI NA LUNCH MAMY:</h1></div>
     <div class="dania">
 <table class="table">
-    <tr><th>Knajpa</th><th>Dzisiejsza oferta</th></tr>
-    {{range .}}
-    <tr><td>{{.Place}}</td><td>{{.Name}}</td></tr>
-    {{end}}
+    <tr><th>Knajpa</th><th>Dzisiejsza oferta</th><th>Cena</th></tr>
+{{range .}}
+    <tr><td>{{.Place}}</td><td>{{.Name}}</td><td>{{.Price}} PLN</td></tr>
+{{end}}
 </table>
 
 <a href="/admin/places">Admin</a>
