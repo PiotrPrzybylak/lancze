@@ -25,21 +25,30 @@ type Lunch struct {
 }
 
 var sessionStore map[string]Client
+var sessionStore2 map[string]PlaceAdmin
 var storageMutex sync.RWMutex
 
 type Client struct {
 	loggedIn bool
 }
 
+type PlaceAdmin struct {
+	placeID int64
+}
+
+var db *sql.DB
+
 const loginPage = "<html><head><title>Login</title></head><body><form action=\"login\" method=\"post\"> <input type=\"password\" name=\"password\" /> <input type=\"submit\" value=\"login\" /> </form> </body> </html>"
 
 func main() {
 
 	sessionStore = make(map[string]Client)
+	sessionStore2 = make(map[string]PlaceAdmin)
 
 	println("Hello!")
 
-	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
+	var err error
+	db, err = sql.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
 		log.Fatalf("Error opening database: %q", err)
 	}
@@ -144,6 +153,67 @@ func main() {
 	http.HandleFunc("/admin/login", handleLogin)
 	http.HandleFunc("/admin/logout", handleLogout)
 
+	http.HandleFunc("/restaurant/login_form", handleLoginForm)
+	http.HandleFunc("/restaurant/login", handleRestaurantLogin)
+	http.HandleFunc("/restaurant/edit", handleRestaurantEdit)
+	http.Handle("/restaurant/add", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		cookie, err := r.Cookie("rsession")
+		if err != nil {
+			if err != http.ErrNoCookie {
+				fmt.Fprint(w, err)
+				return
+			} else {
+				err = nil
+			}
+		}
+
+		user, present := sessionStore2[cookie.Value]
+
+		if !present {
+			http.Redirect(w, r, "/restaurant/login_form", 301)
+			return
+		}
+
+
+		r.ParseForm()
+
+		price, err := strconv.ParseFloat(r.Form.Get("price"), 64);
+		if err != nil {
+			panic(err);
+		}
+
+		sqlStatement := `
+		UPDATE offers
+		SET offer = $1, price = $4
+		WHERE place_id = $2 AND "date" = $3`
+		res, err := db.Exec(sqlStatement, strings.Replace(html.EscapeString(r.Form.Get("menu")), "\n", "<br/>", -1), r.Form.Get("place_id"), r.Form.Get("date"), price)
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Printf("TEST 123")
+
+		count, err := res.RowsAffected()
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("counter: %d\n", int(count))
+		if count == 0 {
+			stmt, err := db.Prepare("INSERT INTO offers(offer, place_id, \"date\", price) VALUES($1, $2, $3, $4)")
+			if err != nil {
+				panic(err)
+			}
+			menu := template.HTML(strings.Replace(html.EscapeString(r.Form.Get("menu")), "\n", "<br/>", -1))
+			_, err = stmt.Exec(menu, user.placeID, r.Form.Get("date"), price)
+			if err != nil {
+				panic(err)
+			}
+		}
+		http.Redirect(w, r, "/", 301)
+	}))
+
+
 	fs := http.FileServer(http.Dir("server/static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
@@ -153,6 +223,77 @@ func main() {
 	}
 
 	println(http.ListenAndServe(":"+port, nil))
+}
+func handleRestaurantEdit(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("rsession")
+	if err != nil {
+		if err != http.ErrNoCookie {
+			fmt.Fprint(w, err)
+			return
+		} else {
+			err = nil
+		}
+	}
+
+	user, present := sessionStore2[cookie.Value]
+
+	if !present {
+		http.Redirect(w, r, "/restaurant/login_form", 301)
+		return
+	}
+
+
+	t, err := template.ParseFiles("server/place.html")
+	if err != nil {
+		panic(err)
+	}
+
+	now := gotime.Now()
+	today := time.NewLocalDate(now.Date())
+	id := user.placeID
+
+	values := map[string]interface{}{}
+	values["id"] = id
+	values["today"] = today
+	values["lunch"] = getLunch(db, today, id)
+
+	print(values)
+
+	t.Execute(w, values)
+
+	}
+
+func handleRestaurantLogin(w http.ResponseWriter, r *http.Request) {
+
+	err := r.ParseForm()
+	if err != nil {
+		fmt.Fprint(w, err)
+		return
+	}
+
+	if subtle.ConstantTimeCompare([]byte(r.FormValue("password")), []byte("maslo")) != 1 {
+		http.Redirect(w, r, "/restaurant/login_form?error=bad_credentials", 301)
+	}
+
+	cookie := &http.Cookie{
+		Name:  "rsession",
+		Value: uuid.NewV4().String(),
+	}
+
+	sessionStore2[cookie.Value] = PlaceAdmin{placeID: 1}
+	http.SetCookie(w, cookie)
+	http.Redirect(w, r, "/restaurant/edit", 301)
+}
+
+
+func handleLoginForm(w http.ResponseWriter, r *http.Request) {
+
+	t, err := template.ParseFiles("server/login.html")
+	if err != nil {
+		panic(err)
+	}
+
+	t.Execute(w, nil)
 }
 
 func renderHome(home_template string, r *http.Request, db *sql.DB, w http.ResponseWriter) {
