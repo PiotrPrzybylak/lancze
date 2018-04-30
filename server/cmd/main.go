@@ -21,7 +21,7 @@ import (
 type Lunch struct {
 	Place string
 	Name  template.HTML
-	Price int
+	Price float64
 }
 
 var sessionStore map[string]Client
@@ -44,7 +44,7 @@ func main() {
 		log.Fatalf("Error opening database: %q", err)
 	}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/v3", func(w http.ResponseWriter, r *http.Request) {
 		renderHome("server/home.html", r, db, w)
 
 	})
@@ -53,7 +53,7 @@ func main() {
 		renderHome("server/templates/v2/index.html", r, db, w)
 	})
 
-	http.HandleFunc("/v3", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		renderHome("server/homev3.html", r, db, w)
 	})
 
@@ -95,7 +95,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		values["offer"] = getLunch(db, today, int64(i))
+		values["lunch"] = getLunch(db, today, int64(i))
 
 		print(values)
 
@@ -105,15 +105,16 @@ func main() {
 	http.Handle("/admin/add", authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 
+		price, err := strconv.ParseFloat(r.Form.Get("price"), 64);
 		if err != nil {
-			panic(err)
+			panic(err);
 		}
 
 		sqlStatement := `
 		UPDATE offers
-		SET offer = $1
+		SET offer = $1, price = $4
 		WHERE place_id = $2 AND "date" = $3`
-		res, err := db.Exec(sqlStatement, strings.Replace(html.EscapeString(r.Form.Get("menu")), "\n", "<br/>", -1), r.Form.Get("place_id"), r.Form.Get("date"))
+		res, err := db.Exec(sqlStatement, strings.Replace(html.EscapeString(r.Form.Get("menu")), "\n", "<br/>", -1), r.Form.Get("place_id"), r.Form.Get("date"), price)
 		if err != nil {
 			panic(err)
 		}
@@ -126,12 +127,12 @@ func main() {
 		}
 		fmt.Printf("counter: %d\n", int(count))
 		if count == 0 {
-			stmt, err := db.Prepare("INSERT INTO offers(offer, place_id, \"date\") VALUES($1, $2, $3)")
+			stmt, err := db.Prepare("INSERT INTO offers(offer, place_id, \"date\", price) VALUES($1, $2, $3, $4)")
 			if err != nil {
 				panic(err)
 			}
 			menu := template.HTML(strings.Replace(html.EscapeString(r.Form.Get("menu")), "\n", "<br/>", -1))
-			_, err = stmt.Exec(menu, r.Form.Get("place_id"), r.Form.Get("date"))
+			_, err = stmt.Exec(menu, r.Form.Get("place_id"), r.Form.Get("date"), price)
 			if err != nil {
 				panic(err)
 			}
@@ -188,7 +189,7 @@ func getPlaces(db *sql.DB) map[int64]string {
 	return places
 }
 func getLunches(db *sql.DB, places map[int64]string, date time.LocalDate) []Lunch {
-	rows, err := db.Query("SELECT offer, place_id FROM offers WHERE \"date\" = $1", date)
+	rows, err := db.Query("SELECT offer, place_id, price FROM offers WHERE \"date\" = $1", date)
 	if err != nil {
 		panic(err)
 	}
@@ -197,25 +198,27 @@ func getLunches(db *sql.DB, places map[int64]string, date time.LocalDate) []Lunc
 	for rows.Next() {
 		var name string
 		var placeID int64
-		if err := rows.Scan(&name, &placeID); err != nil {
+		var price float64
+		if err := rows.Scan(&name, &placeID, &price); err != nil {
 			panic(err)
 		}
-		lunches = append(lunches, Lunch{Name: template.HTML(name), Place: places[placeID], Price: 19})
+		lunches = append(lunches, Lunch{Name: template.HTML(name), Place: places[placeID], Price: price})
 	}
 	return lunches
 }
 
-func getLunch(db *sql.DB, date time.LocalDate, placeID int64) string {
-	var offer string
-	err := db.QueryRow("SELECT offer FROM offers WHERE \"date\" = $1 AND place_id = $2", date, placeID).Scan(&offer)
+func getLunch(db *sql.DB, date time.LocalDate, placeID int64) Lunch {
+	lunch := Lunch{}
+
+	err := db.QueryRow("SELECT offer, price FROM offers WHERE \"date\" = $1 AND place_id = $2", date, placeID).Scan(&lunch.Name, &lunch.Price)
 	if err == sql.ErrNoRows {
-		return ""
+		return lunch
 	}
 	if err != nil {
 		panic(err)
 	}
-	offer = strings.Replace(offer, "<br/>", "\n", -1)
-	return offer
+	lunch.Name = template.HTML(strings.Replace(string(lunch.Name), "<br/>", "\n", -1))
+	return lunch
 }
 
 type authenticationMiddleware struct {
@@ -262,7 +265,7 @@ func (h authenticationMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Reque
 			Name:  "session",
 			Value: uuid.NewV4().String(),
 		}
-		client = Client{false}
+		client = Client{loggedIn: false}
 		storageMutex.Lock()
 		sessionStore[cookie.Value] = client
 		storageMutex.Unlock()
@@ -309,7 +312,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 			Name:  "session",
 			Value: uuid.NewV4().String(),
 		}
-		client = Client{false}
+		client = Client{loggedIn: false}
 		storageMutex.Lock()
 		sessionStore[cookie.Value] = client
 		storageMutex.Unlock()
@@ -368,7 +371,7 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if present == true {
-		client := Client{false}
+		client := Client{ loggedIn: false}
 		storageMutex.Lock()
 		sessionStore[cookie.Value] = client
 		storageMutex.Unlock()

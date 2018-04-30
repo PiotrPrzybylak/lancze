@@ -7,7 +7,6 @@
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous"/>
     <style>
         body {
-            padding: 10px 20px  ;
             background-image: url("/static/jedzenie1.jpg");
             background-repeat: no-repeat;
             background-size: cover;
@@ -22,25 +21,43 @@
 
         .dania {
             margin-top: 30px    ;
-            background-color: rgba(255, 255, 255, 0.7);
+            background-color: rgba(255, 255, 255, 0.8);
+            min-width: 400px;
+        }
+
+        .content {
             padding: 20px;
+            min-width: 450px;
+        }
+        th {
+            font-size: x-large;
+        }
+
+        td {
+            font-size: large;
         }
 
     </style>
 </head>
 <body>
 
+
+<div class="content">
+
+
 <div class="dania"><h1>W ŁODZI NA LUNCH MAMY:</h1></div>
     <div class="dania">
 <table class="table">
     <tr><th>Knajpa</th><th>Dzisiejsza oferta</th><th>Cena</th></tr>
 {{range .}}
-    <tr><td>{{.Place}}</td><td>{{.Name}}</td><td>{{.Price}} PLN</td></tr>
+    <tr><td><b>{{.Place}}</b></td><td>{{.Name}}</td><td>{{.Price}}&nbsp;PLN</td></tr>
 {{end}}
 </table>
 
 <a href="/admin/places">Admin</a>
     </div>
+
+</div>
 </body>
 
 
