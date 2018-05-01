@@ -311,6 +311,8 @@ func handleRestaurantEdit(w http.ResponseWriter, r *http.Request) {
 
 func handleRestaurantLogin(w http.ResponseWriter, r *http.Request) {
 
+	setNoCache(w)
+
 	err := r.ParseForm()
 	if err != nil {
 		fmt.Fprint(w, err)
@@ -515,6 +517,10 @@ func (h restaurantAuthenticationMiddleware) ServeHTTP(w http.ResponseWriter, r *
 
 
 func handleLogin(w http.ResponseWriter, r *http.Request) {
+
+	setNoCache(w)
+
+
 	cookie, err := r.Cookie("session")
 	if err != nil {
 		if err != http.ErrNoCookie {
@@ -608,6 +614,10 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleRestaurantLogout(w http.ResponseWriter, r *http.Request) {
+
+
+	setNoCache(w)
+
 	cookie, err := r.Cookie("rsession")
 	if err != nil {
 		if err != http.ErrNoCookie {
