@@ -156,6 +156,7 @@ func main() {
 
 	http.HandleFunc("/restaurant/login_form", handleLoginForm)
 	http.HandleFunc("/restaurant/login", handleRestaurantLogin)
+	http.HandleFunc("/restaurant/logout", handleRestaurantLogout)
 	http.Handle("/restaurant/edit", authenticateRestuarnt(http.HandlerFunc(handleRestaurantEdit)))
 	http.Handle("/restaurant/add", authenticateRestuarnt(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -420,7 +421,7 @@ func authenticate(h http.Handler) authenticationMiddleware {
 }
 
 func authenticateRestuarnt(h http.Handler) http.Handler {
-	return authenticationMiddleware{h}
+	return restaurantAuthenticationMiddleware{h}
 }
 
 
@@ -539,5 +540,22 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 		storageMutex.Unlock()
 	}
 	http.Redirect(w, r, "/", 301)
+
+}
+
+func handleRestaurantLogout(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("rsession")
+	if err != nil {
+		if err != http.ErrNoCookie {
+			fmt.Fprint(w, err)
+			return
+		} else {
+			err = nil
+		}
+	} else {
+		delete(sessionStore2, cookie.Value)
+	}
+
+	http.Redirect(w, r, "/restaurant/login_form", 301)
 
 }
