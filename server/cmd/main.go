@@ -16,6 +16,7 @@ import (
 	"strings"
 	"sync"
 	gotime "time"
+	"context"
 )
 
 type Lunch struct {
@@ -155,8 +156,8 @@ func main() {
 
 	http.HandleFunc("/restaurant/login_form", handleLoginForm)
 	http.HandleFunc("/restaurant/login", handleRestaurantLogin)
-	http.HandleFunc("/restaurant/edit", handleRestaurantEdit)
-	http.Handle("/restaurant/add", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/restaurant/edit", authenticateRestuarnt(http.HandlerFunc(handleRestaurantEdit)))
+	http.Handle("/restaurant/add", authenticateRestuarnt(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		cookie, err := r.Cookie("rsession")
 		if err != nil {
@@ -211,7 +212,7 @@ func main() {
 			}
 		}
 		http.Redirect(w, r, "/", 301)
-	}))
+	})))
 
 
 	fs := http.FileServer(http.Dir("server/static"))
@@ -225,23 +226,6 @@ func main() {
 	println(http.ListenAndServe(":"+port, nil))
 }
 func handleRestaurantEdit(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("rsession")
-	if err != nil {
-		if err != http.ErrNoCookie {
-			fmt.Fprint(w, err)
-			return
-		} else {
-			err = nil
-		}
-	}
-
-	user, present := sessionStore2[cookie.Value]
-
-	if !present {
-		http.Redirect(w, r, "/restaurant/login_form", 301)
-		return
-	}
-
 
 	t, err := template.ParseFiles("server/place.html")
 	if err != nil {
@@ -250,6 +234,7 @@ func handleRestaurantEdit(w http.ResponseWriter, r *http.Request) {
 
 	now := gotime.Now()
 	today := time.NewLocalDate(now.Date())
+	user := r.Context().Value("user").(PlaceAdmin)
 	id := user.placeID
 
 	values := map[string]interface{}{}
@@ -366,6 +351,10 @@ type authenticationMiddleware struct {
 	wrappedHandler http.Handler
 }
 
+type restaurantAuthenticationMiddleware struct {
+	wrappedHandler http.Handler
+}
+
 func (h authenticationMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var epoch = gotime.Unix(0, 0).Format(gotime.RFC1123)
@@ -424,9 +413,41 @@ func (h authenticationMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Reque
 
 }
 
+
+
 func authenticate(h http.Handler) authenticationMiddleware {
 	return authenticationMiddleware{h}
 }
+
+func authenticateRestuarnt(h http.Handler) http.Handler {
+	return authenticationMiddleware{h}
+}
+
+
+func (h restaurantAuthenticationMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+	cookie, err := r.Cookie("rsession")
+	if err != nil {
+		if err != http.ErrNoCookie {
+			fmt.Fprint(w, err)
+			return
+		} else {
+			err = nil
+		}
+	}
+
+	user, present := sessionStore2[cookie.Value]
+
+	if !present {
+		http.Redirect(w, r, "/restaurant/login_form", 301)
+		return
+	}
+
+	r = r.WithContext(context.WithValue(r.Context(), "user", user))
+	h.wrappedHandler.ServeHTTP(w, r)
+
+}
+
 
 func handleLogin(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("session")
