@@ -517,10 +517,10 @@ func (h restaurantAuthenticationMiddleware) ServeHTTP(w http.ResponseWriter, r *
 	if err != nil {
 		if err != http.ErrNoCookie {
 			fmt.Fprint(w, err)
-			return
 		} else {
-			err = nil
+			http.Redirect(w, r, "/restaurant/login_form", 301)
 		}
+		return
 	}
 
 	user, present := sessionStore2[cookie.Value]
