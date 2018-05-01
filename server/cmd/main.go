@@ -17,9 +17,11 @@ import (
 	"sync"
 	gotime "time"
 	"context"
+	"github.com/PiotrPrzybylak/lancze/server/domain"
 )
 
 type Lunch struct {
+	Date time.LocalDate
 	Place string
 	Name  template.HTML
 	Price float64
@@ -212,7 +214,7 @@ func main() {
 				panic(err)
 			}
 		}
-		http.Redirect(w, r, "/", 301)
+		http.Redirect(w, r, "/restaurant/edit", 301)
 	})))
 
 
@@ -228,6 +230,15 @@ func main() {
 }
 func handleRestaurantEdit(w http.ResponseWriter, r *http.Request) {
 
+	dateString := r.URL.Query().Get("date")
+	var choosenDate time.LocalDate
+	if dateString == "" {
+		choosenDate = time.NewLocalDate(gotime.Now().Date())
+	} else {
+		choosenDate = time.MustParseLocalDate(dateString)
+	}
+
+
 	t, err := template.ParseFiles("server/restaurant.html")
 	if err != nil {
 		panic(err)
@@ -236,20 +247,56 @@ func handleRestaurantEdit(w http.ResponseWriter, r *http.Request) {
 	now := gotime.Now()
 	today := time.NewLocalDate(now.Date())
 	user := r.Context().Value("user").(PlaceAdmin)
-	id := user.placeID
+	placeID := user.placeID
 
 	places := getPlaces(db)
 
 	values := map[string]interface{}{}
-	values["id"] = id
+	values["id"] = placeID
 	values["today"] = today
-	values["lunch"] = getLunch(db, today, id)
-	values["restaurant"] = places[id]
+	values["lunch"] = getLunch(db, today, placeID)
+	values["restaurant"] = places[placeID]
+
+
+
+	type LunchForEdition struct {
+		Lunch Lunch
+		I int
+		Edit bool
+		Weekend bool
+		Weekday string
+	}
+
+	date := today
+	dates := []LunchForEdition{}
+	for i := 1; i <= 20; i++ {
+		lunch := getLunch(db, date, placeID)
+		lunch.Date = date
+		lunchForEdition := LunchForEdition{Lunch: lunch, I: i}
+		if date == choosenDate {
+				lunchForEdition.Edit = true
+			}
+
+		if date.Weekday() == time.Saturday || date.Weekday() == time.Sunday {
+			lunchForEdition.Weekend = true
+		}
+
+		lunchForEdition.Weekday = domain.Weekdays[date.Weekday()]
+
+		dates = append(dates, lunchForEdition)
+		date = date.Next()
+
+	}
+
+	values["dates"] = dates
+	values["choosenDate"] = choosenDate
 
 	//print(values)
 
-	t.Execute(w, values)
-
+	err = t.Execute(w, values)
+	if err != nil {
+		panic(err)
+	}
 	}
 
 func handleRestaurantLogin(w http.ResponseWriter, r *http.Request) {
