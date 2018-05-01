@@ -159,9 +159,9 @@ func main() {
 	http.HandleFunc("/restaurant/login_form", handleLoginForm)
 	http.HandleFunc("/restaurant/login", handleRestaurantLogin)
 	http.HandleFunc("/restaurant/logout", handleRestaurantLogout)
-	http.Handle("/restaurant/edit", authenticateRestuarnt(http.HandlerFunc(handleRestaurantEdit)))
-	http.Handle("/restaurant/delete", authenticateRestuarnt(http.HandlerFunc(handleRestaurantDelete)))
-	http.Handle("/restaurant/add", authenticateRestuarnt(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/restaurant/edit", authenticateRestaurant(http.HandlerFunc(handleRestaurantEdit)))
+	http.Handle("/restaurant/delete", authenticateRestaurant(http.HandlerFunc(handleRestaurantDelete)))
+	http.Handle("/restaurant/add", authenticateRestaurant(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		user := r.Context().Value("user").(PlaceAdmin)
 
@@ -319,7 +319,27 @@ func handleRestaurantLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if subtle.ConstantTimeCompare([]byte(r.FormValue("password")), []byte("maslo")) != 1 {
+	username := r.FormValue("username")
+
+		var placeID int
+		var password sql.NullString
+
+
+	err = db.QueryRow("SELECT id, password FROM places WHERE username = $1", username).Scan(&placeID, &password)
+	if err == sql.ErrNoRows {
+		http.Redirect(w, r, "/restaurant/login_form?error=bad_credentials", 301)
+		return
+	}
+	if err != nil {
+		panic(err)
+	}
+
+
+	if ! password.Valid {
+		http.Redirect(w, r, "/restaurant/login_form?error=bad_credentials", 301)
+	}
+
+	if subtle.ConstantTimeCompare([]byte(r.FormValue("password")), []byte(password.String)) != 1 {
 		http.Redirect(w, r, "/restaurant/login_form?error=bad_credentials", 301)
 	}
 
@@ -484,7 +504,7 @@ func authenticate(h http.Handler) authenticationMiddleware {
 	return authenticationMiddleware{h}
 }
 
-func authenticateRestuarnt(h http.Handler) http.Handler {
+func authenticateRestaurant(h http.Handler) http.Handler {
 	return restaurantAuthenticationMiddleware{h}
 }
 
