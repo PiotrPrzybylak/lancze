@@ -18,6 +18,7 @@
         textarea {
             width: 100%;
             resize: both;
+            height: 100px;
         }
     </style>
 </head>
@@ -60,7 +61,7 @@
             <td style="white-space: nowrap">{{$offer.Lunch.Date}}</td><td>{{$offer.Weekday}}<input name="date" type="hidden"
                                                                                            value="{{$offer.Lunch.Date}}">
             </td>
-            <td><textarea name="menu">{{$offer.Lunch.Name}}</textarea></td>
+            <td><textarea name="menu" maxlength="500">{{$offer.Lunch.Name}}</textarea></td>
             <td><input name="price" value="{{$offer.Lunch.Price}}"/></td>
             <td><input type="submit" value="Zapisz">  <a href="/restaurant/delete?date={{$offer.Lunch.Date}}">Usuń</a></td>
         </form>
