@@ -220,8 +220,8 @@ func handleRestaurantDelete(w http.ResponseWriter, r *http.Request) {
 
 		sqlStatement := `
 		DELETE FROM offers
-		WHERE place_id = $2 AND "date" = $3`
-		res, err := db.Exec(sqlStatement, user.placeID,r.URL.Query().Get("date"))
+		WHERE place_id = $1 AND "date" = $2`
+		res, err := db.Exec(sqlStatement, user.placeID, r.URL.Query().Get("date"))
 		if err != nil {
 			panic(err)
 		}
@@ -418,18 +418,7 @@ type restaurantAuthenticationMiddleware struct {
 
 func (h authenticationMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	var epoch = gotime.Unix(0, 0).Format(gotime.RFC1123)
-
-	var noCacheHeaders = map[string]string{
-		"Expires":         epoch,
-		"Cache-Control":   "no-cache, private, max-age=0",
-		"Pragma":          "no-cache",
-		"X-Accel-Expires": "0",
-	}
-
-	for k, v := range noCacheHeaders {
-		w.Header().Set(k, v)
-	}
+	setNoCache(w)
 
 	cookie, err := r.Cookie("session")
 	if err != nil {
@@ -474,6 +463,19 @@ func (h authenticationMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Reque
 
 }
 
+func setNoCache(w http.ResponseWriter) {
+	var epoch = gotime.Unix(0, 0).Format(gotime.RFC1123)
+	var noCacheHeaders = map[string]string{
+		"Expires":         epoch,
+		"Cache-Control":   "no-cache, private, max-age=0",
+		"Pragma":          "no-cache",
+		"X-Accel-Expires": "0",
+	}
+	for k, v := range noCacheHeaders {
+		w.Header().Set(k, v)
+	}
+}
+
 
 
 func authenticate(h http.Handler) authenticationMiddleware {
@@ -486,6 +488,8 @@ func authenticateRestuarnt(h http.Handler) http.Handler {
 
 
 func (h restaurantAuthenticationMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+	setNoCache(w)
 
 	cookie, err := r.Cookie("rsession")
 	if err != nil {
