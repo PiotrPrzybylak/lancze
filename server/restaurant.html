@@ -27,7 +27,7 @@
 <h1>Co na lunch? - {{.restaurant}}</h1>
 
 <div style="text-align: right; margin-bottom: 10px;">
-<a href="/restaurant/logout">Logout</a>
+<a href="/restaurant/logout">Wyloguj</a>
 </div>
 
 
@@ -62,7 +62,7 @@
             </td>
             <td><textarea name="menu">{{$offer.Lunch.Name}}</textarea></td>
             <td><input name="price" value="{{$offer.Lunch.Price}}"/></td>
-            <td><input type="submit" value="Zapisz"></td>
+            <td><input type="submit" value="Zapisz">  <a href="/restaurant/delete?date={{$offer.Lunch.Date}}">Usuń</a></td>
         </form>
     </tr>
     {{else}}
