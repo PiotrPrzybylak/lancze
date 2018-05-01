@@ -228,7 +228,7 @@ func main() {
 }
 func handleRestaurantEdit(w http.ResponseWriter, r *http.Request) {
 
-	t, err := template.ParseFiles("server/place.html")
+	t, err := template.ParseFiles("server/restaurant.html")
 	if err != nil {
 		panic(err)
 	}
@@ -238,12 +238,15 @@ func handleRestaurantEdit(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value("user").(PlaceAdmin)
 	id := user.placeID
 
+	places := getPlaces(db)
+
 	values := map[string]interface{}{}
 	values["id"] = id
 	values["today"] = today
 	values["lunch"] = getLunch(db, today, id)
+	values["restaurant"] = places[id]
 
-	print(values)
+	//print(values)
 
 	t.Execute(w, values)
 

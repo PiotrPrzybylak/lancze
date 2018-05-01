@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous"/>
+    <style>
+        body {
+            padding: 10px;
+        }
+        h1 {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Co na lunch? - {{.restaurant}}</h1>
+
+    <a href="/restaurant/logout">Logout</a>
+
+    <table class="table">
+        <tr><th>Data</th><th>Oferta</th><th>Cena</th><th></th></tr>
+        <tr><form action="add" method="post">                 <input type="hidden" value="{{.id}}" name="place_id">
+            <td>{{.today}} <input name="date" type="hidden" value="{{.today}}"></td>
+      <td><textarea name="menu">{{.lunch.Name}}</textarea></td><td><input name="price" value="{{printf "%.2f" .lunch.Price}}"/></td><td><input type="submit"></td></form></tr>
+    </table>
+
+</body>
+
+
+</html>
