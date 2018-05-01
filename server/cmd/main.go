@@ -160,29 +160,16 @@ func main() {
 	http.HandleFunc("/restaurant/login", handleRestaurantLogin)
 	http.HandleFunc("/restaurant/logout", handleRestaurantLogout)
 	http.Handle("/restaurant/edit", authenticateRestuarnt(http.HandlerFunc(handleRestaurantEdit)))
+	http.Handle("/restaurant/delete", authenticateRestuarnt(http.HandlerFunc(handleRestaurantDelete)))
 	http.Handle("/restaurant/add", authenticateRestuarnt(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		cookie, err := r.Cookie("rsession")
-		if err != nil {
-			if err != http.ErrNoCookie {
-				fmt.Fprint(w, err)
-				return
-			} else {
-				err = nil
-			}
-		}
-
-		user, present := sessionStore2[cookie.Value]
-
-		if !present {
-			http.Redirect(w, r, "/restaurant/login_form", 301)
-			return
-		}
-
+		user := r.Context().Value("user").(PlaceAdmin)
 
 		r.ParseForm()
 
-		price, err := strconv.ParseFloat(r.Form.Get("price"), 64);
+		priceString := r.Form.Get("price")
+		priceString = strings.Replace(priceString, ",", ".", -1)
+		price, err := strconv.ParseFloat(priceString, 64);
 		if err != nil {
 			panic(err);
 		}
@@ -195,8 +182,6 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-
-		fmt.Printf("TEST 123")
 
 		count, err := res.RowsAffected()
 		if err != nil {
@@ -228,14 +213,39 @@ func main() {
 
 	println(http.ListenAndServe(":"+port, nil))
 }
+func handleRestaurantDelete(w http.ResponseWriter, r *http.Request) {
+
+	user := r.Context().Value("user").(PlaceAdmin)
+
+
+		sqlStatement := `
+		DELETE FROM offers
+		WHERE place_id = $2 AND "date" = $3`
+		res, err := db.Exec(sqlStatement, user.placeID,r.URL.Query().Get("date"))
+		if err != nil {
+			panic(err)
+		}
+
+		count, err := res.RowsAffected()
+		if err != nil {
+			panic(err)
+		}
+
+		print("Deleted rows: ", count, user.placeID,r.URL.Query().Get("date"))
+	http.Redirect(w, r, "/restaurant/edit", 301)
+
+
+}
+
+
 func handleRestaurantEdit(w http.ResponseWriter, r *http.Request) {
 
 	dateString := r.URL.Query().Get("date")
-	var choosenDate time.LocalDate
+	var chosenDate time.LocalDate
 	if dateString == "" {
-		choosenDate = time.NewLocalDate(gotime.Now().Date())
+		chosenDate = time.NewLocalDate(gotime.Now().Date())
 	} else {
-		choosenDate = time.MustParseLocalDate(dateString)
+		chosenDate = time.MustParseLocalDate(dateString)
 	}
 
 
@@ -273,7 +283,7 @@ func handleRestaurantEdit(w http.ResponseWriter, r *http.Request) {
 		lunch := getLunch(db, date, placeID)
 		lunch.Date = date
 		lunchForEdition := LunchForEdition{Lunch: lunch, I: i}
-		if date == choosenDate {
+		if date == chosenDate {
 				lunchForEdition.Edit = true
 			}
 
@@ -289,7 +299,7 @@ func handleRestaurantEdit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	values["dates"] = dates
-	values["choosenDate"] = choosenDate
+	values["chosenDate"] = chosenDate
 
 	//print(values)
 

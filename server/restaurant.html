@@ -61,7 +61,7 @@
                                                                                            value="{{$offer.Lunch.Date}}">
             </td>
             <td><textarea name="menu">{{$offer.Lunch.Name}}</textarea></td>
-            <td><input name="price" value="{{printf "%.2f" $offer.Lunch.Price}}"/></td>
+            <td><input name="price" value="{{$offer.Lunch.Price}}"/></td>
             <td><input type="submit" value="Zapisz"></td>
         </form>
     </tr>
@@ -69,8 +69,8 @@
     <tr>
         <td style="white-space: nowrap">{{$offer.Lunch.Date}}</td><td>{{$offer.Weekday}}</td>
         <td>{{$offer.Lunch.Name}}</td>
-        <td>{{printf "%.2f" $offer.Lunch.Price}}</td>
-        <td><a href="?date={{$offer.Lunch.Date}}">Edytuj</a></td>
+        <td>{{$offer.Lunch.Price}}</td>
+        <td><a href="?date={{$offer.Lunch.Date}}">Edytuj</a>  <a href="/?date={{$offer.Lunch.Date}}">Podgląd</a>  <a href="/restaurant/delete?date={{$offer.Lunch.Date}}">Usuń</a></td></td>
     </tr>
     {{end}}
 {{end}}
