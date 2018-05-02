@@ -20,6 +20,10 @@
             resize: both;
             height: 100px;
         }
+
+        input.price {
+            width: 5ch;
+        }
     </style>
 </head>
 <body>
@@ -62,7 +66,7 @@
                                                                                            value="{{$offer.Lunch.Date}}">
             </td>
             <td><textarea name="menu" maxlength="500">{{$offer.Lunch.Name}}</textarea></td>
-            <td><input name="price" value="{{$offer.Lunch.Price}}"/></td>
+            <td><input name="price" value="{{$offer.Lunch.Price}}" maxlength="6" class="price"/></td>
             <td><input type="submit" value="Zapisz">  <a href="/restaurant/delete?date={{$offer.Lunch.Date}}">Usuń</a></td>
         </form>
     </tr>
