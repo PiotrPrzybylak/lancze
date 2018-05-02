@@ -321,7 +321,7 @@ func handleRestaurantLogin(w http.ResponseWriter, r *http.Request) {
 
 	username := r.FormValue("username")
 
-		var placeID int
+		var placeID int64
 		var password sql.NullString
 
 
@@ -348,7 +348,7 @@ func handleRestaurantLogin(w http.ResponseWriter, r *http.Request) {
 		Value: uuid.NewV4().String(),
 	}
 
-	sessionStore2[cookie.Value] = PlaceAdmin{placeID: 1}
+	sessionStore2[cookie.Value] = PlaceAdmin{placeID: placeID}
 	http.SetCookie(w, cookie)
 	http.Redirect(w, r, "/restaurant/edit", 301)
 }
