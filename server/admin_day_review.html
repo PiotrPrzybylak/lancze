@@ -64,7 +64,7 @@
             </td>
             <td><textarea name="menu" maxlength="500">{{$offer.Lunch.Name}}</textarea></td>
             <td><input name="price" value="{{$offer.Lunch.Price}}" maxlength="6" class="price"/></td>
-            <td><input type="submit" value="Zapisz">  <a href="/restaurant/delete?date={{$offer.Lunch.Date}}">Usuń</a></td>
+            <td><input type="submit" value="Zapisz"></td>
         </form>
     </tr>
     {{else}}
@@ -72,7 +72,7 @@
         <td style="white-space: nowrap">{{$offer.Lunch.Place}}</td><td>{{$offer.Weekday}}</td>
         <td>{{$offer.Lunch.Name}}</td>
         <td>{{$offer.Lunch.Price}}</td>
-        <td><a href="?date={{$offer.Lunch.Date}}">Edytuj</a>  <a href="/?date={{$offer.Lunch.Date}}">Podgląd</a>  <a href="/restaurant/delete?date={{$offer.Lunch.Date}}">Usuń</a></td></td>
+        <td><a href="/admin/place?id={{$offer.PlaceID}}&date={{$offer.Lunch.Date}}">Edytuj</a></td></td>
     </tr>
     {{end}}
 {{end}}

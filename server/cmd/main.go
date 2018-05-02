@@ -382,7 +382,7 @@ func renderAdminHome(w http.ResponseWriter, r *http.Request) {
 	for placeID, placeName := range  places {
 		lunch := getLunch(db, date, placeID)
 		lunch.Place = placeName
-		lunches = append( lunches, LunchForEdition{ Lunch : lunch})
+		lunches = append( lunches, LunchForEdition{ Lunch : lunch, PlaceID: placeID})
 
 	}
 	values := map[string]interface{}{}
@@ -686,4 +686,5 @@ type LunchForEdition struct {
 	Edit bool
 	Weekend bool
 	Weekday string
+	PlaceID int64
 }
