@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+          integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous"/>
+    <style>
+        body {
+            padding: 10px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        textarea {
+            width: 100%;
+            resize: both;
+            height: 100px;
+        }
+
+        input.price {
+            width: 5ch;
+        }
+    </style>
+</head>
+<body>
+
+
+<h1>Co na lunch? - {{.chosenDate}}</h1>
+
+<div style="text-align: right; margin-bottom: 10px;">
+<a href="/restaurant/logout">Wyloguj</a>
+</div>
+
+<table class="table">
+    <tr>
+        <th style="white-space: nowrap">Miejsce</th><th></th>
+        <th style="width: 99%">Oferta</th>
+        <th>Cena</th>
+        <th></th>
+    </tr>
+{{range  $i, $offer := .dates }}
+
+
+{{if $offer.Weekend}}
+
+    <tr style="background-color: #F0F0F0">
+        <td style="white-space: nowrap">{{$offer.Lunch.Date}}</td><td>{{$offer.Weekday}}</td>
+        <td></td>
+        <td></td>
+        <td></td>
+    </tr>
+{{else}}
+
+    {{if $offer.Edit}}
+
+    <tr>
+        <form action="add" method="post"><input type="hidden" value="{{$.id}}" name="place_id">
+            <td style="white-space: nowrap">{{$offer.Lunch.Date}}</td><td>{{$offer.Weekday}}<input name="date" type="hidden"
+                                                                                           value="{{$offer.Lunch.Date}}">
+            </td>
+            <td><textarea name="menu" maxlength="500">{{$offer.Lunch.Name}}</textarea></td>
+            <td><input name="price" value="{{$offer.Lunch.Price}}" maxlength="6" class="price"/></td>
+            <td><input type="submit" value="Zapisz">  <a href="/restaurant/delete?date={{$offer.Lunch.Date}}">Usuń</a></td>
+        </form>
+    </tr>
+    {{else}}
+    <tr>
+        <td style="white-space: nowrap">{{$offer.Lunch.Place}}</td><td>{{$offer.Weekday}}</td>
+        <td>{{$offer.Lunch.Name}}</td>
+        <td>{{$offer.Lunch.Price}}</td>
+        <td><a href="?date={{$offer.Lunch.Date}}">Edytuj</a>  <a href="/?date={{$offer.Lunch.Date}}">Podgląd</a>  <a href="/restaurant/delete?date={{$offer.Lunch.Date}}">Usuń</a></td></td>
+    </tr>
+    {{end}}
+{{end}}
+{{end}}
+
+
+</table>
+
+</body>
+
+
+</html>

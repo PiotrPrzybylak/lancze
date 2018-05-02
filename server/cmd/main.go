@@ -151,6 +151,7 @@ func main() {
 		}
 		http.Redirect(w, r, "/", 301)
 	})))
+	http.Handle("/admin/day", authenticate(http.HandlerFunc(renderAdminHome)))
 
 	http.HandleFunc("/login", handleLogin)
 	http.HandleFunc("/admin/login", handleLogin)
@@ -269,13 +270,7 @@ func handleRestaurantEdit(w http.ResponseWriter, r *http.Request) {
 
 
 
-	type LunchForEdition struct {
-		Lunch Lunch
-		I int
-		Edit bool
-		Weekend bool
-		Weekday string
-	}
+
 
 	date := today
 	dates := []LunchForEdition{}
@@ -369,6 +364,38 @@ func renderHome(home_template string, r *http.Request, db *sql.DB, w http.Respon
 	if err != nil {
 		panic(err)
 	}
+	date := getSelectedDate(r)
+	places := getPlaces(db)
+	lunches := getLunches(db, places, date)
+	t.Execute(w, lunches)
+}
+
+func renderAdminHome(w http.ResponseWriter, r *http.Request) {
+	t, err := template.ParseFiles("server/admin_day_review.html")
+	if err != nil {
+		panic(err)
+	}
+	date := getSelectedDate(r)
+	places := getPlaces(db)
+	lunches := []LunchForEdition{}
+
+	for placeID, placeName := range  places {
+		lunch := getLunch(db, date, placeID)
+		lunch.Place = placeName
+		lunches = append( lunches, LunchForEdition{ Lunch : lunch})
+
+	}
+	values := map[string]interface{}{}
+
+	values["dates"] = lunches
+	values["chosenDate"] = date
+	err = t.Execute(w, values)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func getSelectedDate(r *http.Request) time.LocalDate {
 	dateString := r.URL.Query().Get("date")
 	var date time.LocalDate
 	if dateString == "" {
@@ -376,9 +403,7 @@ func renderHome(home_template string, r *http.Request, db *sql.DB, w http.Respon
 	} else {
 		date = time.MustParseLocalDate(dateString)
 	}
-	places := getPlaces(db)
-	lunches := getLunches(db, places, date)
-	t.Execute(w, lunches)
+	return date
 }
 func getPlaces(db *sql.DB) map[int64]string {
 	placesRows, err := db.Query("SELECT id, name FROM places")
@@ -652,4 +677,13 @@ func handleRestaurantLogout(w http.ResponseWriter, r *http.Request) {
 
 	http.Redirect(w, r, "/restaurant/login_form", 301)
 
+}
+
+
+type LunchForEdition struct {
+	Lunch Lunch
+	I int
+	Edit bool
+	Weekend bool
+	Weekday string
 }
