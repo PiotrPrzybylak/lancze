@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="en">
 <head>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-118568576-1"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -28,15 +30,25 @@
             margin-bottom: 30px;
         }
 
-        .dania {
+        .dania1 {
             margin-top: 30px    ;
             background-color: rgba(255, 255, 255, 0.8);
-            min-width: 400px;
+            /* min-width: 300px; */
+
         }
 
+		.dania2 {
+            margin-top: 30px    ;
+            background-color: rgba(255, 255, 255, 0.8);
+            /* min-width: 300px; */
+			float: left;
+        }
+		
         .content {
             padding: 20px;
-            min-width: 450px;
+            min-width: 200px;
+			/* width: max-content;	*/
+			float: left;
         }
         th {
             font-size: x-large;
@@ -54,8 +66,8 @@
 <div class="content">
 
 
-<div class="dania"><h1>W ŁODZI NA LUNCH MAMY:</h1></div>
-    <div class="dania">
+<div class="dania1"><h1>W ŁODZI NA LUNCH MAMY:</h1></div>
+<div class="dania2">
 <table class="table">
     <tr><th>Knajpa</th><th>Dzisiejsza oferta</th><th>Cena</th></tr>
 {{range .}}
@@ -70,6 +82,9 @@
     <div style="text-align: center"><a href="https://lancze.herokuapp.com/restaurant/edit">Dodaj menu</a>
     </div>
 
+	<div style='clear:both'></div>
+	
+	</div>
 </body>
 
 
