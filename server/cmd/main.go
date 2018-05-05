@@ -58,7 +58,10 @@ func main() {
 
 	http.HandleFunc("/v3", func(w http.ResponseWriter, r *http.Request) {
 		renderHome("server/home.html", r, db, w)
+	})
 
+	http.HandleFunc("/v4", func(w http.ResponseWriter, r *http.Request) {
+		renderHome("server/homev4.html", r, db, w)
 	})
 
 	http.HandleFunc("/v2", func(w http.ResponseWriter, r *http.Request) {
