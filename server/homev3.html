@@ -27,7 +27,12 @@
             text-align: center;
             opacity: 1;
             padding: 20px;
-            margin-bottom: 30px;
+            margin: 0px;
+            padding-bottom: 0px;
+        }
+
+        h5 {
+            text-align: center;
         }
 
         .dania1 {
@@ -35,6 +40,7 @@
             background-color: rgba(255, 255, 255, 0.9);
             /* min-width: 300px; */
             min-width: 100%;
+            float: left;
 
         }
 
@@ -77,10 +83,10 @@
 <div class="content">
 
 
-    <div class="dania1"><h1>W ŁODZI NA LUNCH MAMY:</h1></div>
+    <div class="dania1"><h1>W ŁODZI NA LUNCH MAMY:</h1><h5>{{.date}}</h5></div>
     <div class="dania2">
         <table class="table">
-        {{range .}}
+        {{range .offers}}
             <tr><th>{{.Place}}</th><th style="text-align: right;">{{.Price}}&nbsp;PLN</th></tr>
             <tr><td colspan="2">{{.Name}}</td></tr>
         {{end}}

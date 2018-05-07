@@ -370,7 +370,10 @@ func renderHome(home_template string, r *http.Request, db *sql.DB, w http.Respon
 	date := getSelectedDate(r)
 	places := getPlaces(db)
 	lunches := getLunches(db, places, date)
-	t.Execute(w, lunches)
+	values := map[string]interface{}{}
+	values["offers"] = lunches
+	values["date"] = date
+	t.Execute(w, values)
 }
 
 func renderAdminHome(w http.ResponseWriter, r *http.Request) {
