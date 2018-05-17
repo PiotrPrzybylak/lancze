@@ -21,10 +21,16 @@ import (
 )
 
 type Lunch struct {
-	Date time.LocalDate
-	Place string
-	Name  template.HTML
-	Price float64
+	Date          time.LocalDate
+	Place         string
+	Name          template.HTML
+	Price         float64
+	PlaceWithZone Place
+}
+
+type Place struct {
+	Name string
+	Zone string
 }
 
 var sessionStore map[string]Client
@@ -368,8 +374,18 @@ func renderHome(home_template string, r *http.Request, db *sql.DB, w http.Respon
 		panic(err)
 	}
 	date := getSelectedDate(r)
-	places := getPlaces(db)
+	places := getPlacesWithZone(db)
 	lunches := getLunches(db, places, date)
+
+	lunchesByZone :=  map[string][]Lunch{}
+	for _, lunch := range lunches {
+		lunchesByZone[lunch.PlaceWithZone.Zone] =append(lunchesByZone[lunch.PlaceWithZone.Zone], lunch)
+	}
+
+	lunches = lunchesByZone["off"]
+	lunches = append(lunches, lunchesByZone["centrum"]...)
+	lunches = append(lunches, lunchesByZone[""]...)
+
 	values := map[string]interface{}{}
 	values["offers"] = lunches
 	values["date"] = date
@@ -428,7 +444,26 @@ func getPlaces(db *sql.DB) map[int64]string {
 	}
 	return places
 }
-func getLunches(db *sql.DB, places map[int64]string, date time.LocalDate) []Lunch {
+
+func getPlacesWithZone(db *sql.DB) map[int64]Place {
+	placesRows, err := db.Query("SELECT id, name, zone FROM places")
+	if err != nil {
+		panic(err)
+	}
+	defer placesRows.Close()
+	places := map[int64]Place{}
+	for placesRows.Next() {
+		var place Place
+		var placeID int64
+		if err := placesRows.Scan(&placeID, &place.Name, &place.Zone); err != nil {
+			panic(err)
+		}
+		places[placeID] = place
+	}
+	return places
+}
+
+func getLunches(db *sql.DB, places map[int64]Place, date time.LocalDate) []Lunch {
 	rows, err := db.Query("SELECT offer, place_id, price FROM offers WHERE \"date\" = $1", date)
 	if err != nil {
 		panic(err)
@@ -442,7 +477,7 @@ func getLunches(db *sql.DB, places map[int64]string, date time.LocalDate) []Lunc
 		if err := rows.Scan(&name, &placeID, &price); err != nil {
 			panic(err)
 		}
-		lunches = append(lunches, Lunch{Name: template.HTML(name), Place: places[placeID], Price: price})
+		lunches = append(lunches, Lunch{Name: template.HTML(name), Place: places[placeID].Name, Price: price, PlaceWithZone: places[placeID]})
 	}
 	return lunches
 }
