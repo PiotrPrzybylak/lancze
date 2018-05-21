@@ -62,6 +62,10 @@ func main() {
 		log.Fatalf("Error opening database: %q", err)
 	}
 
+	http.HandleFunc("/dev", func(w http.ResponseWriter, r *http.Request) {
+		renderHome("server/home-dev.html", r, db, w)
+	})
+
 	http.HandleFunc("/v3", func(w http.ResponseWriter, r *http.Request) {
 		renderHome("server/home.html", r, db, w)
 	})
