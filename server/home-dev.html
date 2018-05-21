@@ -74,6 +74,29 @@
             font-size: large;
         }
 
+        .tooltipaa .tooltiptext {
+            visibility: hidden;
+
+            background-color: rgba(255, 255, 255, 0.9);
+
+            text-align: center;
+            border-radius: 6px;
+            padding: 20px;
+
+            /* Position the tooltip */
+            position: fixed;
+            z-index: 1;
+
+            border-radius: 200px;
+            height: 400px;
+            width: 400px;
+        }
+
+        .tooltipaa:hover .tooltiptext {
+            visibility: visible;
+        }
+
+
     </style>
 </head>
 <body>
@@ -86,7 +109,7 @@
     <div class="dania2">
         <table class="table">
         {{range .offers}}
-            <tr><th>{{.Place}}</th><th style="text-align: right;">{{.Price}}&nbsp;PLN</th></tr>
+            <tr><th class="tooltipaa">{{.Place}}<span class="tooltiptext"><h3>{{.Place}}</h3> <p>tel: 123456<p> <p>ul. Kolorowa 123 p m.666</p></span></th><th style="text-align: right;">{{.Price}}&nbsp;PLN</th></tr>
             <tr><td colspan="2">{{.Name}}</td></tr>
         {{end}}
         </table>
@@ -104,4 +127,4 @@
 </body>
 
 
-</html>
+</html>`
