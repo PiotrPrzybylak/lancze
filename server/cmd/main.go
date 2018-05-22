@@ -389,12 +389,10 @@ func renderHome(home_template string, r *http.Request, db *sql.DB, w http.Respon
 		lunchesByZone[lunch.PlaceWithZone.Zone] = append(lunchesByZone[lunch.PlaceWithZone.Zone], lunch)
 	}
 
-	lunches = lunchesByZone["off"]
-	lunches = append(lunches, lunchesByZone["centrum"]...)
-	lunches = append(lunches, lunchesByZone[""]...)
-
 	values := map[string]interface{}{}
-	values["offers"] = lunches
+	values["offers_off"] = lunchesByZone["off"]
+	values["offers_centrum"] = lunchesByZone["centrum"]
+	values["offers_lodz"] = lunchesByZone["lodz"]
 	values["date"] = date
 	t.Execute(w, values)
 }
