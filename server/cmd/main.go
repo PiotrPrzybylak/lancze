@@ -44,6 +44,7 @@ func isIntegral(val float64) bool {
 type Place struct {
 	Name string
 	Zone string
+	Address string
 }
 
 var sessionStore map[string]Client
@@ -451,7 +452,7 @@ func getPlaces(db *sql.DB) map[int64]string {
 }
 
 func getPlacesWithZone(db *sql.DB) map[int64]Place {
-	placesRows, err := db.Query("SELECT id, name, zone FROM places")
+	placesRows, err := db.Query("SELECT id, name, zone, address FROM places")
 	if err != nil {
 		panic(err)
 	}
@@ -460,7 +461,7 @@ func getPlacesWithZone(db *sql.DB) map[int64]Place {
 	for placesRows.Next() {
 		var place Place
 		var placeID int64
-		if err := placesRows.Scan(&placeID, &place.Name, &place.Zone); err != nil {
+		if err := placesRows.Scan(&placeID, &place.Name, &place.Zone, &place.Address); err != nil {
 			panic(err)
 		}
 		places[placeID] = place
