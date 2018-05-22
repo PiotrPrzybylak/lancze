@@ -18,6 +18,7 @@ import (
 	"strings"
 	"sync"
 	gotime "time"
+	"sort"
 )
 
 type Lunch struct {
@@ -380,6 +381,8 @@ func renderHome(home_template string, r *http.Request, db *sql.DB, w http.Respon
 	date := getSelectedDate(r)
 	places := getPlacesWithZone(db)
 	lunches := getLunches(db, places, date)
+
+	sort.Slice(lunches, func(i, j int) bool { return lunches[i].Place < lunches[j].Place })
 
 	lunchesByZone := map[string][]Lunch{}
 	for _, lunch := range lunches {
