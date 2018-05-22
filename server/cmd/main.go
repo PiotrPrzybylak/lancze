@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"crypto/subtle"
 	"database/sql"
 	"fmt"
+	"github.com/PiotrPrzybylak/lancze/server/domain"
 	"github.com/PiotrPrzybylak/time"
 	_ "github.com/lib/pq"
 	"github.com/satori/go.uuid"
@@ -16,8 +18,6 @@ import (
 	"strings"
 	"sync"
 	gotime "time"
-	"context"
-	"github.com/PiotrPrzybylak/lancze/server/domain"
 )
 
 type Lunch struct {
@@ -31,7 +31,7 @@ type Lunch struct {
 func (l Lunch) PriceFormatted() string {
 	presion := 2
 	if isIntegral(l.Price) {
-		presion = 0;
+		presion = 0
 	}
 	return strconv.FormatFloat(l.Price, 'f', presion, 64)
 }
@@ -142,9 +142,9 @@ func main() {
 	http.Handle("/admin/add", authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 
-		price, err := strconv.ParseFloat(r.Form.Get("price"), 64);
+		price, err := strconv.ParseFloat(r.Form.Get("price"), 64)
 		if err != nil {
-			panic(err);
+			panic(err)
 		}
 
 		sqlStatement := `
@@ -195,9 +195,9 @@ func main() {
 
 		priceString := r.Form.Get("price")
 		priceString = strings.Replace(priceString, ",", ".", -1)
-		price, err := strconv.ParseFloat(priceString, 64);
+		price, err := strconv.ParseFloat(priceString, 64)
 		if err != nil {
-			panic(err);
+			panic(err)
 		}
 
 		sqlStatement := `
@@ -228,7 +228,6 @@ func main() {
 		http.Redirect(w, r, "/restaurant/edit", 301)
 	})))
 
-
 	fs := http.FileServer(http.Dir("server/static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
@@ -243,26 +242,23 @@ func handleRestaurantDelete(w http.ResponseWriter, r *http.Request) {
 
 	user := r.Context().Value("user").(PlaceAdmin)
 
-
-		sqlStatement := `
+	sqlStatement := `
 		DELETE FROM offers
 		WHERE place_id = $1 AND "date" = $2`
-		res, err := db.Exec(sqlStatement, user.placeID, r.URL.Query().Get("date"))
-		if err != nil {
-			panic(err)
-		}
+	res, err := db.Exec(sqlStatement, user.placeID, r.URL.Query().Get("date"))
+	if err != nil {
+		panic(err)
+	}
 
-		count, err := res.RowsAffected()
-		if err != nil {
-			panic(err)
-		}
+	count, err := res.RowsAffected()
+	if err != nil {
+		panic(err)
+	}
 
-		print("Deleted rows: ", count, user.placeID,r.URL.Query().Get("date"))
+	print("Deleted rows: ", count, user.placeID, r.URL.Query().Get("date"))
 	http.Redirect(w, r, "/restaurant/edit", 301)
 
-
 }
-
 
 func handleRestaurantEdit(w http.ResponseWriter, r *http.Request) {
 
@@ -273,7 +269,6 @@ func handleRestaurantEdit(w http.ResponseWriter, r *http.Request) {
 	} else {
 		chosenDate = time.MustParseLocalDate(dateString)
 	}
-
 
 	t, err := template.ParseFiles("server/restaurant.html")
 	if err != nil {
@@ -293,10 +288,6 @@ func handleRestaurantEdit(w http.ResponseWriter, r *http.Request) {
 	values["lunch"] = getLunch(db, today, placeID)
 	values["restaurant"] = places[placeID]
 
-
-
-
-
 	date := today
 	dates := []LunchForEdition{}
 	for i := 1; i <= 20; i++ {
@@ -304,8 +295,8 @@ func handleRestaurantEdit(w http.ResponseWriter, r *http.Request) {
 		lunch.Date = date
 		lunchForEdition := LunchForEdition{Lunch: lunch, I: i}
 		if date == chosenDate {
-				lunchForEdition.Edit = true
-			}
+			lunchForEdition.Edit = true
+		}
 
 		if date.Weekday() == time.Saturday || date.Weekday() == time.Sunday {
 			lunchForEdition.Weekend = true
@@ -327,7 +318,7 @@ func handleRestaurantEdit(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-	}
+}
 
 func handleRestaurantLogin(w http.ResponseWriter, r *http.Request) {
 
@@ -341,9 +332,8 @@ func handleRestaurantLogin(w http.ResponseWriter, r *http.Request) {
 
 	username := r.FormValue("username")
 
-		var placeID int64
-		var password sql.NullString
-
+	var placeID int64
+	var password sql.NullString
 
 	err = db.QueryRow("SELECT id, password FROM places WHERE username = $1", username).Scan(&placeID, &password)
 	if err == sql.ErrNoRows {
@@ -354,8 +344,7 @@ func handleRestaurantLogin(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-
-	if ! password.Valid {
+	if !password.Valid {
 		http.Redirect(w, r, "/restaurant/login_form?error=bad_credentials", 301)
 	}
 
@@ -372,7 +361,6 @@ func handleRestaurantLogin(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, cookie)
 	http.Redirect(w, r, "/restaurant/edit", 301)
 }
-
 
 func handleLoginForm(w http.ResponseWriter, r *http.Request) {
 
@@ -393,9 +381,9 @@ func renderHome(home_template string, r *http.Request, db *sql.DB, w http.Respon
 	places := getPlacesWithZone(db)
 	lunches := getLunches(db, places, date)
 
-	lunchesByZone :=  map[string][]Lunch{}
+	lunchesByZone := map[string][]Lunch{}
 	for _, lunch := range lunches {
-		lunchesByZone[lunch.PlaceWithZone.Zone] =append(lunchesByZone[lunch.PlaceWithZone.Zone], lunch)
+		lunchesByZone[lunch.PlaceWithZone.Zone] = append(lunchesByZone[lunch.PlaceWithZone.Zone], lunch)
 	}
 
 	lunches = lunchesByZone["off"]
@@ -417,10 +405,10 @@ func renderAdminHome(w http.ResponseWriter, r *http.Request) {
 	places := getPlaces(db)
 	lunches := []LunchForEdition{}
 
-	for placeID, placeName := range  places {
+	for placeID, placeName := range places {
 		lunch := getLunch(db, date, placeID)
 		lunch.Place = placeName
-		lunches = append( lunches, LunchForEdition{ Lunch : lunch, PlaceID: placeID})
+		lunches = append(lunches, LunchForEdition{Lunch: lunch, PlaceID: placeID})
 
 	}
 	values := map[string]interface{}{}
@@ -580,8 +568,6 @@ func setNoCache(w http.ResponseWriter) {
 	}
 }
 
-
-
 func authenticate(h http.Handler) authenticationMiddleware {
 	return authenticationMiddleware{h}
 }
@@ -589,7 +575,6 @@ func authenticate(h http.Handler) authenticationMiddleware {
 func authenticateRestaurant(h http.Handler) http.Handler {
 	return restaurantAuthenticationMiddleware{h}
 }
-
 
 func (h restaurantAuthenticationMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
@@ -617,11 +602,9 @@ func (h restaurantAuthenticationMiddleware) ServeHTTP(w http.ResponseWriter, r *
 
 }
 
-
 func handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	setNoCache(w)
-
 
 	cookie, err := r.Cookie("session")
 	if err != nil {
@@ -706,7 +689,7 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if present == true {
-		client := Client{ loggedIn: false}
+		client := Client{loggedIn: false}
 		storageMutex.Lock()
 		sessionStore[cookie.Value] = client
 		storageMutex.Unlock()
@@ -716,7 +699,6 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleRestaurantLogout(w http.ResponseWriter, r *http.Request) {
-
 
 	setNoCache(w)
 
@@ -736,11 +718,10 @@ func handleRestaurantLogout(w http.ResponseWriter, r *http.Request) {
 
 }
 
-
 type LunchForEdition struct {
-	Lunch Lunch
-	I int
-	Edit bool
+	Lunch   Lunch
+	I       int
+	Edit    bool
 	Weekend bool
 	Weekday string
 	PlaceID int64
