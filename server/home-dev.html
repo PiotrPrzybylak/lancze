@@ -37,7 +37,7 @@
         }
 
         .dania1 {
-            margin-top: 30px    ;
+            margin: 30px 0;
             background-color: rgba(255, 255, 255, 0.9);
             /* min-width: 300px; */
             min-width: 100%;
@@ -46,7 +46,7 @@
         }
 
         .dania2 {
-            margin-top: 30px    ;
+            margin-bottom: 5px;
             background-color: rgba(255, 255, 255, 0.9);
             /* min-width: 300px; */
             float: left;
@@ -92,10 +92,15 @@
             width: 400px;
         }
 
-        .tooltipaa:hover .tooltiptext {
-            visibility: visible;
-        }
+        /*.tooltipaa:hover .tooltiptext {*/
+            /*visibility: visible;*/
+        /*}*/
 
+
+        .adres {
+            font-size: small;
+            font-weight: normal;
+            }
 
     </style>
 </head>
@@ -106,17 +111,15 @@
 
 
     <div class="dania1"><h1>W ŁODZI NA LUNCH MAMY:</h1><h5>{{.date}}</h5></div>
+
+{{range .offers}}
     <div class="dania2">
         <table class="table">
-        {{range .offers}}
-            <tr><th class="tooltipaa">{{.Place}}<span class="tooltiptext"><h3>{{.Place}}</h3> <p>tel: 123456<p> <p>ul. Kolorowa 123 p m.666</p></span></th><th style="text-align: right;">{{.Price}}&nbsp;PLN</th></tr>
+            <tr><th class="tooltipaa">{{.Place}}<span class="tooltiptext"><h3>{{.Place}}</h3> <p>tel: <p> <p>ul. </p></span></th><th style="text-align: right;">{{.Price}}&nbsp;PLN</th></tr>
             <tr><td colspan="2">{{.Name}}</td></tr>
-        {{end}}
         </table>
-
-
-
     </div >
+{{end}}
 
     <div style="text-align: center" class="dania3"><a href="https://lancze.herokuapp.com/restaurant/edit">Dodaj menu</a>
     </div>
