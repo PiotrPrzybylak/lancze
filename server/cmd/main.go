@@ -28,6 +28,18 @@ type Lunch struct {
 	PlaceWithZone Place
 }
 
+func (l Lunch) PriceFormatted() string {
+	presion := 2
+	if isIntegral(l.Price) {
+		presion = 0;
+	}
+	return strconv.FormatFloat(l.Price, 'f', presion, 64)
+}
+
+func isIntegral(val float64) bool {
+	return val == float64(int(val))
+}
+
 type Place struct {
 	Name string
 	Zone string
