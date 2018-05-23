@@ -84,6 +84,11 @@ func main() {
 		renderHome("server/home.html", r, db, w)
 	})
 
+	http.HandleFunc("/skriny", func(w http.ResponseWriter, r *http.Request) {
+		renderHome("server/skriny.html", r, db, w)
+	})
+
+
 	http.HandleFunc("/v4", func(w http.ResponseWriter, r *http.Request) {
 		renderHome("server/homev4.html", r, db, w)
 	})
