@@ -1,28 +1,38 @@
 package auth
 
 import (
-	"net/http"
+	"context"
+	"crypto/subtle"
+	"database/sql"
 	"fmt"
 	"github.com/satori/go.uuid"
+	"net/http"
 	"sync"
 	gotime "time"
-	"context"
-	"database/sql"
-	"crypto/subtle"
 )
 
+type Auth struct {
+	db           *sql.DB
+	sessions     map[string]User
+	cookieName   string
+	loginFormURL string
+}
+
+func NewAuth(db *sql.DB, cookieName string, loginFormURL string) Auth {
+	return Auth{db: db, cookieName: cookieName, loginFormURL: loginFormURL, sessions: make(map[string]User)}
+}
+
 var SessionStore map[string]Client
-var SessionStore2 map[string]PlaceAdmin
 var storageMutex sync.RWMutex
 
 var DB *sql.DB
 
-type Client struct {
-	loggedIn bool
+type User struct {
+	PlaceID int64
 }
 
-type PlaceAdmin struct {
-	PlaceID int64
+type Client struct {
+	loggedIn bool
 }
 
 type authenticationMiddleware struct {
@@ -31,7 +41,7 @@ type authenticationMiddleware struct {
 
 func (h authenticationMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	SetNoCache(w)
+	setNoCache(w)
 
 	cookie, err := r.Cookie("session")
 	if err != nil {
@@ -76,8 +86,7 @@ func (h authenticationMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Reque
 
 }
 
-
-func SetNoCache(w http.ResponseWriter) {
+func setNoCache(w http.ResponseWriter) {
 	var epoch = gotime.Unix(0, 0).Format(gotime.RFC1123)
 	var noCacheHeaders = map[string]string{
 		"Expires":         epoch,
@@ -90,19 +99,20 @@ func SetNoCache(w http.ResponseWriter) {
 	}
 }
 
-func Authenticate(h http.Handler) authenticationMiddleware {
+func AuthenticateAdmin(h http.Handler) authenticationMiddleware {
 	return authenticationMiddleware{h}
 }
 
 type restaurantAuthenticationMiddleware struct {
 	wrappedHandler http.Handler
+	auth           Auth
 }
 
 func (h restaurantAuthenticationMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	SetNoCache(w)
+	setNoCache(w)
 
-	cookie, err := r.Cookie("rsession")
+	cookie, err := r.Cookie(h.auth.cookieName)
 	if err != nil {
 		if err != http.ErrNoCookie {
 			fmt.Fprint(w, err)
@@ -112,7 +122,7 @@ func (h restaurantAuthenticationMiddleware) ServeHTTP(w http.ResponseWriter, r *
 		return
 	}
 
-	user, present := SessionStore2[cookie.Value]
+	user, present := h.auth.sessions[cookie.Value]
 
 	if !present {
 		http.Redirect(w, r, "/restaurant/login_form", 301)
@@ -124,57 +134,63 @@ func (h restaurantAuthenticationMiddleware) ServeHTTP(w http.ResponseWriter, r *
 
 }
 
-func AuthenticateRestaurant(h http.Handler) http.Handler {
-	return restaurantAuthenticationMiddleware{h}
+func (auth Auth) Authenticate(h http.Handler) http.Handler {
+	return restaurantAuthenticationMiddleware{h, auth}
 }
 
 const loginPage = "<html><head><title>Login</title></head><body><form action=\"login\" method=\"post\"> <input type=\"password\" name=\"password\" /> <input type=\"submit\" value=\"login\" /> </form> </body> </html>"
 
-func HandleRestaurantLogin(w http.ResponseWriter, r *http.Request) {
+func (auth Auth) HandleRestaurantLogin() http.HandlerFunc {
 
-	SetNoCache(w)
+	return func(w http.ResponseWriter, r *http.Request) {
 
-	err := r.ParseForm()
-	if err != nil {
-		fmt.Fprint(w, err)
-		return
+		setNoCache(w)
+
+		err := r.ParseForm()
+		if err != nil {
+			fmt.Fprint(w, err)
+			return
+		}
+
+		username := r.FormValue("username")
+
+		var placeID int64
+		var password sql.NullString
+
+		err = DB.QueryRow("SELECT id, password FROM places WHERE username = $1", username).Scan(&placeID, &password)
+		if err == sql.ErrNoRows {
+			http.Redirect(w, r, "/restaurant/login_form?error=bad_credentials", 301)
+			return
+		}
+		if err != nil {
+			panic(err)
+		}
+
+		if !password.Valid {
+			http.Redirect(w, r, "/restaurant/login_form?error=bad_credentials", 301)
+			return
+		}
+
+		if subtle.ConstantTimeCompare([]byte(r.FormValue("password")), []byte(password.String)) != 1 {
+			http.Redirect(w, r, "/restaurant/login_form?error=bad_credentials", 301)
+			return
+		}
+
+		cookie := &http.Cookie{
+			Name:  auth.cookieName,
+			Value: uuid.NewV4().String(),
+		}
+
+		auth.sessions[cookie.Value] = User{PlaceID: placeID}
+		http.SetCookie(w, cookie)
+		http.Redirect(w, r, "/restaurant/edit", 301)
+
 	}
-
-	username := r.FormValue("username")
-
-	var placeID int64
-	var password sql.NullString
-
-	err = DB.QueryRow("SELECT id, password FROM places WHERE username = $1", username).Scan(&placeID, &password)
-	if err == sql.ErrNoRows {
-		http.Redirect(w, r, "/restaurant/login_form?error=bad_credentials", 301)
-		return
-	}
-	if err != nil {
-		panic(err)
-	}
-
-	if !password.Valid {
-		http.Redirect(w, r, "/restaurant/login_form?error=bad_credentials", 301)
-	}
-
-	if subtle.ConstantTimeCompare([]byte(r.FormValue("password")), []byte(password.String)) != 1 {
-		http.Redirect(w, r, "/restaurant/login_form?error=bad_credentials", 301)
-	}
-
-	cookie := &http.Cookie{
-		Name:  "rsession",
-		Value: uuid.NewV4().String(),
-	}
-
-	SessionStore2[cookie.Value] = PlaceAdmin{PlaceID: placeID}
-	http.SetCookie(w, cookie)
-	http.Redirect(w, r, "/restaurant/edit", 301)
 }
 
 func HandleLogin(w http.ResponseWriter, r *http.Request) {
 
-	SetNoCache(w)
+	setNoCache(w)
 
 	cookie, err := r.Cookie("session")
 	if err != nil {
@@ -268,22 +284,27 @@ func HandleLogout(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func HandleRestaurantLogout(w http.ResponseWriter, r *http.Request) {
+func (auth Auth) HandleRestaurantLogout() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 
-	SetNoCache(w)
+		setNoCache(w)
 
-	cookie, err := r.Cookie("rsession")
-	if err != nil {
-		if err != http.ErrNoCookie {
-			fmt.Fprint(w, err)
-			return
+		cookie, err := r.Cookie(auth.cookieName)
+		if err != nil {
+			if err != http.ErrNoCookie {
+				fmt.Fprint(w, err)
+				return
+			} else {
+				err = nil
+			}
 		} else {
-			err = nil
+			delete(auth.sessions, cookie.Value)
 		}
-	} else {
-		delete(SessionStore2, cookie.Value)
+
+		http.Redirect(w, r, "/restaurant/login_form", 301)
 	}
+}
 
-	http.Redirect(w, r, "/restaurant/login_form", 301)
-
+func CurrentUser(r *http.Request) User {
+	return r.Context().Value("user").(User)
 }

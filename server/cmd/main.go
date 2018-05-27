@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"github.com/PiotrPrzybylak/lancze/server/app/auth"
 	"github.com/PiotrPrzybylak/lancze/server/domain"
 	"github.com/PiotrPrzybylak/time"
 	_ "github.com/lib/pq"
@@ -11,11 +12,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	gotime "time"
-	"sort"
-	"github.com/PiotrPrzybylak/lancze/server/app/auth"
 )
 
 type Lunch struct {
@@ -39,31 +39,27 @@ func isIntegral(val float64) bool {
 }
 
 type Place struct {
-	Name string
-	Zone string
+	Name    string
+	Zone    string
 	Address string
 }
 
-
-
-
-
 var db *sql.DB
-
 
 func main() {
 
 	auth.SessionStore = make(map[string]auth.Client)
-	auth.SessionStore2 = make(map[string]auth.PlaceAdmin)
 
 	println("Hello!")
 
 	var err error
 	db, err = sql.Open("postgres", os.Getenv("DATABASE_URL"))
-	auth.DB = db;
+	auth.DB = db
 	if err != nil {
 		log.Fatalf("Error opening database: %q", err)
 	}
+
+	users := auth.NewAuth(db, "rsession", "aaaaaa")
 
 	http.HandleFunc("/dev", func(w http.ResponseWriter, r *http.Request) {
 		renderHome("server/home-dev.html", r, db, w)
@@ -166,13 +162,13 @@ func main() {
 	http.HandleFunc("/admin/logout", auth.HandleLogout)
 
 	http.HandleFunc("/restaurant/login_form", handleLoginForm)
-	http.HandleFunc("/restaurant/login", auth.HandleRestaurantLogin)
-	http.HandleFunc("/restaurant/logout", auth.HandleRestaurantLogout)
-	http.Handle("/restaurant/edit", authenticateRestaurant(http.HandlerFunc(handleRestaurantEdit)))
-	http.Handle("/restaurant/delete", authenticateRestaurant(http.HandlerFunc(handleRestaurantDelete)))
-	http.Handle("/restaurant/add", authenticateRestaurant(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/restaurant/login", users.HandleRestaurantLogin())
+	http.HandleFunc("/restaurant/logout", users.HandleRestaurantLogout())
+	http.Handle("/restaurant/edit", users.Authenticate(http.HandlerFunc(handleRestaurantEdit)))
+	http.Handle("/restaurant/delete", users.Authenticate(http.HandlerFunc(handleRestaurantDelete)))
+	http.Handle("/restaurant/add", users.Authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		user := r.Context().Value("user").(auth.PlaceAdmin)
+		user := auth.CurrentUser(r)
 
 		r.ParseForm()
 
@@ -223,7 +219,7 @@ func main() {
 }
 func handleRestaurantDelete(w http.ResponseWriter, r *http.Request) {
 
-	user := r.Context().Value("user").(auth.PlaceAdmin)
+	user := auth.CurrentUser(r)
 
 	sqlStatement := `
 		DELETE FROM offers
@@ -260,7 +256,7 @@ func handleRestaurantEdit(w http.ResponseWriter, r *http.Request) {
 
 	now := gotime.Now()
 	today := time.NewLocalDate(now.Date())
-	user := r.Context().Value("user").(auth.PlaceAdmin)
+	user := auth.CurrentUser(r)
 	placeID := user.PlaceID
 
 	places := getPlaces(db)
@@ -440,11 +436,7 @@ func getLunch(db *sql.DB, date time.LocalDate, placeID int64) Lunch {
 }
 
 func Authenticate(h http.Handler) http.Handler {
-	return auth.Authenticate(h)
-}
-
-func authenticateRestaurant(h http.Handler) http.Handler {
-	return auth.AuthenticateRestaurant(h)
+	return auth.AuthenticateAdmin(h)
 }
 
 type LunchForEdition struct {
@@ -455,5 +447,3 @@ type LunchForEdition struct {
 	Weekday string
 	PlaceID int64
 }
-
-
