@@ -27,11 +27,11 @@ type Lunch struct {
 }
 
 func (l Lunch) PriceFormatted() string {
-	presion := 2
+	precision := 2
 	if isIntegral(l.Price) {
-		presion = 0
+		precision = 0
 	}
-	return strconv.FormatFloat(l.Price, 'f', presion, 64)
+	return strconv.FormatFloat(l.Price, 'f', precision, 64)
 }
 
 func isIntegral(val float64) bool {
@@ -48,18 +48,16 @@ var db *sql.DB
 
 func main() {
 
-	auth.SessionStore = make(map[string]auth.Client)
-
 	println("Hello!")
 
 	var err error
 	db, err = sql.Open("postgres", os.Getenv("DATABASE_URL"))
-	auth.DB = db
 	if err != nil {
 		log.Fatalf("Error opening database: %q", err)
 	}
 
-	users := auth.NewAuth(db, "rsession", "aaaaaa")
+	users := auth.NewAuth(db, "user_session", "/restaurant/login_form", "/restaurant/edit", "SELECT id, password FROM places WHERE username = $1")
+	admins := auth.NewAuth(db, "admin_session", "/admin/login_form", "/admin/places", "SELECT 0, password FROM admins WHERE username = $1")
 
 	http.HandleFunc("/dev", func(w http.ResponseWriter, r *http.Request) {
 		renderHome("server/home-dev.html", r, db, w)
@@ -73,7 +71,7 @@ func main() {
 		renderHome("server/homev3.html", r, db, w)
 	})
 
-	http.Handle("/admin", Authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/admin", admins.Authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		t, err := template.ParseFiles("server/admin.html")
 		if err != nil {
@@ -83,7 +81,7 @@ func main() {
 		t.Execute(w, getPlaces(db))
 	})))
 
-	http.Handle("/admin/places", Authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/admin/places", admins.Authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		t, err := template.ParseFiles("server/places.html")
 		if err != nil {
@@ -93,7 +91,7 @@ func main() {
 		t.Execute(w, getPlaces(db))
 	})))
 
-	http.Handle("/admin/place", Authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/admin/place", admins.Authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		t, err := template.ParseFiles("server/place.html")
 		if err != nil {
@@ -118,7 +116,7 @@ func main() {
 		t.Execute(w, values)
 	})))
 
-	http.Handle("/admin/add", Authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/admin/add", admins.Authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 
 		price, err := strconv.ParseFloat(r.Form.Get("price"), 64)
@@ -155,15 +153,15 @@ func main() {
 		}
 		http.Redirect(w, r, "/", 301)
 	})))
-	http.Handle("/admin/day", Authenticate(http.HandlerFunc(renderAdminHome)))
+	http.Handle("/admin/day", admins.Authenticate(http.HandlerFunc(renderAdminHome)))
 
-	http.HandleFunc("/login", auth.HandleLogin)
-	http.HandleFunc("/admin/login", auth.HandleLogin)
-	http.HandleFunc("/admin/logout", auth.HandleLogout)
+	http.HandleFunc("/admin/login_form", handleLoginForm("/admin/login"))
+	http.HandleFunc("/admin/login", admins.HandleLogin())
+	http.HandleFunc("/admin/logout", admins.HandleLogout())
 
-	http.HandleFunc("/restaurant/login_form", handleLoginForm)
-	http.HandleFunc("/restaurant/login", users.HandleRestaurantLogin())
-	http.HandleFunc("/restaurant/logout", users.HandleRestaurantLogout())
+	http.HandleFunc("/restaurant/login_form", handleLoginForm("/restaurant/login"))
+	http.HandleFunc("/restaurant/login", users.HandleLogin())
+	http.HandleFunc("/restaurant/logout", users.HandleLogout())
 	http.Handle("/restaurant/edit", users.Authenticate(http.HandlerFunc(handleRestaurantEdit)))
 	http.Handle("/restaurant/delete", users.Authenticate(http.HandlerFunc(handleRestaurantDelete)))
 	http.Handle("/restaurant/add", users.Authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -297,14 +295,17 @@ func handleRestaurantEdit(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func handleLoginForm(w http.ResponseWriter, r *http.Request) {
+func handleLoginForm(loginURL string) http.HandlerFunc {
 
-	t, err := template.ParseFiles("server/login.html")
-	if err != nil {
-		panic(err)
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		t, err := template.ParseFiles("server/login.html")
+		if err != nil {
+			panic(err)
+		}
+
+		t.Execute(w, loginURL)
 	}
-
-	t.Execute(w, nil)
 }
 
 func renderHome(home_template string, r *http.Request, db *sql.DB, w http.ResponseWriter) {
@@ -433,10 +434,6 @@ func getLunch(db *sql.DB, date time.LocalDate, placeID int64) Lunch {
 	}
 	lunch.Name = template.HTML(strings.Replace(string(lunch.Name), "<br/>", "\n", -1))
 	return lunch
-}
-
-func Authenticate(h http.Handler) http.Handler {
-	return auth.AuthenticateAdmin(h)
 }
 
 type LunchForEdition struct {
