@@ -80,21 +80,8 @@ func main() {
 		renderHome("server/home-dev.html", r, db, w)
 	})
 
-	http.HandleFunc("/v3", func(w http.ResponseWriter, r *http.Request) {
-		renderHome("server/home.html", r, db, w)
-	})
-
 	http.HandleFunc("/skriny", func(w http.ResponseWriter, r *http.Request) {
 		renderHome("server/skriny.html", r, db, w)
-	})
-
-
-	http.HandleFunc("/v4", func(w http.ResponseWriter, r *http.Request) {
-		renderHome("server/homev4.html", r, db, w)
-	})
-
-	http.HandleFunc("/v2", func(w http.ResponseWriter, r *http.Request) {
-		renderHome("server/templates/v2/index.html", r, db, w)
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -318,8 +305,6 @@ func handleRestaurantEdit(w http.ResponseWriter, r *http.Request) {
 
 	values["dates"] = dates
 	values["chosenDate"] = chosenDate
-
-	//print(values)
 
 	err = t.Execute(w, values)
 	if err != nil {
