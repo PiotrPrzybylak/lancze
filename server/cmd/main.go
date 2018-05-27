@@ -1,14 +1,11 @@
 package main
 
 import (
-	"context"
-	"crypto/subtle"
 	"database/sql"
 	"fmt"
 	"github.com/PiotrPrzybylak/lancze/server/domain"
 	"github.com/PiotrPrzybylak/time"
 	_ "github.com/lib/pq"
-	"github.com/satori/go.uuid"
 	"html"
 	"html/template"
 	"log"
@@ -16,9 +13,9 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	gotime "time"
 	"sort"
+	"github.com/PiotrPrzybylak/lancze/server/app/auth"
 )
 
 type Lunch struct {
@@ -47,31 +44,23 @@ type Place struct {
 	Address string
 }
 
-var sessionStore map[string]Client
-var sessionStore2 map[string]PlaceAdmin
-var storageMutex sync.RWMutex
 
-type Client struct {
-	loggedIn bool
-}
 
-type PlaceAdmin struct {
-	placeID int64
-}
+
 
 var db *sql.DB
 
-const loginPage = "<html><head><title>Login</title></head><body><form action=\"login\" method=\"post\"> <input type=\"password\" name=\"password\" /> <input type=\"submit\" value=\"login\" /> </form> </body> </html>"
 
 func main() {
 
-	sessionStore = make(map[string]Client)
-	sessionStore2 = make(map[string]PlaceAdmin)
+	auth.SessionStore = make(map[string]auth.Client)
+	auth.SessionStore2 = make(map[string]auth.PlaceAdmin)
 
 	println("Hello!")
 
 	var err error
 	db, err = sql.Open("postgres", os.Getenv("DATABASE_URL"))
+	auth.DB = db;
 	if err != nil {
 		log.Fatalf("Error opening database: %q", err)
 	}
@@ -88,7 +77,7 @@ func main() {
 		renderHome("server/homev3.html", r, db, w)
 	})
 
-	http.Handle("/admin", authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/admin", Authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		t, err := template.ParseFiles("server/admin.html")
 		if err != nil {
@@ -98,7 +87,7 @@ func main() {
 		t.Execute(w, getPlaces(db))
 	})))
 
-	http.Handle("/admin/places", authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/admin/places", Authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		t, err := template.ParseFiles("server/places.html")
 		if err != nil {
@@ -108,7 +97,7 @@ func main() {
 		t.Execute(w, getPlaces(db))
 	})))
 
-	http.Handle("/admin/place", authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/admin/place", Authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		t, err := template.ParseFiles("server/place.html")
 		if err != nil {
@@ -133,7 +122,7 @@ func main() {
 		t.Execute(w, values)
 	})))
 
-	http.Handle("/admin/add", authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/admin/add", Authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 
 		price, err := strconv.ParseFloat(r.Form.Get("price"), 64)
@@ -170,20 +159,20 @@ func main() {
 		}
 		http.Redirect(w, r, "/", 301)
 	})))
-	http.Handle("/admin/day", authenticate(http.HandlerFunc(renderAdminHome)))
+	http.Handle("/admin/day", Authenticate(http.HandlerFunc(renderAdminHome)))
 
-	http.HandleFunc("/login", handleLogin)
-	http.HandleFunc("/admin/login", handleLogin)
-	http.HandleFunc("/admin/logout", handleLogout)
+	http.HandleFunc("/login", auth.HandleLogin)
+	http.HandleFunc("/admin/login", auth.HandleLogin)
+	http.HandleFunc("/admin/logout", auth.HandleLogout)
 
 	http.HandleFunc("/restaurant/login_form", handleLoginForm)
-	http.HandleFunc("/restaurant/login", handleRestaurantLogin)
-	http.HandleFunc("/restaurant/logout", handleRestaurantLogout)
+	http.HandleFunc("/restaurant/login", auth.HandleRestaurantLogin)
+	http.HandleFunc("/restaurant/logout", auth.HandleRestaurantLogout)
 	http.Handle("/restaurant/edit", authenticateRestaurant(http.HandlerFunc(handleRestaurantEdit)))
 	http.Handle("/restaurant/delete", authenticateRestaurant(http.HandlerFunc(handleRestaurantDelete)))
 	http.Handle("/restaurant/add", authenticateRestaurant(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		user := r.Context().Value("user").(PlaceAdmin)
+		user := r.Context().Value("user").(auth.PlaceAdmin)
 
 		r.ParseForm()
 
@@ -214,7 +203,7 @@ func main() {
 				panic(err)
 			}
 			menu := template.HTML(strings.Replace(html.EscapeString(r.Form.Get("menu")), "\n", "<br/>", -1))
-			_, err = stmt.Exec(menu, user.placeID, r.Form.Get("date"), price)
+			_, err = stmt.Exec(menu, user.PlaceID, r.Form.Get("date"), price)
 			if err != nil {
 				panic(err)
 			}
@@ -234,12 +223,12 @@ func main() {
 }
 func handleRestaurantDelete(w http.ResponseWriter, r *http.Request) {
 
-	user := r.Context().Value("user").(PlaceAdmin)
+	user := r.Context().Value("user").(auth.PlaceAdmin)
 
 	sqlStatement := `
 		DELETE FROM offers
 		WHERE place_id = $1 AND "date" = $2`
-	res, err := db.Exec(sqlStatement, user.placeID, r.URL.Query().Get("date"))
+	res, err := db.Exec(sqlStatement, user.PlaceID, r.URL.Query().Get("date"))
 	if err != nil {
 		panic(err)
 	}
@@ -249,7 +238,7 @@ func handleRestaurantDelete(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	print("Deleted rows: ", count, user.placeID, r.URL.Query().Get("date"))
+	print("Deleted rows: ", count, user.PlaceID, r.URL.Query().Get("date"))
 	http.Redirect(w, r, "/restaurant/edit", 301)
 
 }
@@ -271,8 +260,8 @@ func handleRestaurantEdit(w http.ResponseWriter, r *http.Request) {
 
 	now := gotime.Now()
 	today := time.NewLocalDate(now.Date())
-	user := r.Context().Value("user").(PlaceAdmin)
-	placeID := user.placeID
+	user := r.Context().Value("user").(auth.PlaceAdmin)
+	placeID := user.PlaceID
 
 	places := getPlaces(db)
 
@@ -310,48 +299,6 @@ func handleRestaurantEdit(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-}
-
-func handleRestaurantLogin(w http.ResponseWriter, r *http.Request) {
-
-	setNoCache(w)
-
-	err := r.ParseForm()
-	if err != nil {
-		fmt.Fprint(w, err)
-		return
-	}
-
-	username := r.FormValue("username")
-
-	var placeID int64
-	var password sql.NullString
-
-	err = db.QueryRow("SELECT id, password FROM places WHERE username = $1", username).Scan(&placeID, &password)
-	if err == sql.ErrNoRows {
-		http.Redirect(w, r, "/restaurant/login_form?error=bad_credentials", 301)
-		return
-	}
-	if err != nil {
-		panic(err)
-	}
-
-	if !password.Valid {
-		http.Redirect(w, r, "/restaurant/login_form?error=bad_credentials", 301)
-	}
-
-	if subtle.ConstantTimeCompare([]byte(r.FormValue("password")), []byte(password.String)) != 1 {
-		http.Redirect(w, r, "/restaurant/login_form?error=bad_credentials", 301)
-	}
-
-	cookie := &http.Cookie{
-		Name:  "rsession",
-		Value: uuid.NewV4().String(),
-	}
-
-	sessionStore2[cookie.Value] = PlaceAdmin{placeID: placeID}
-	http.SetCookie(w, cookie)
-	http.Redirect(w, r, "/restaurant/edit", 301)
 }
 
 func handleLoginForm(w http.ResponseWriter, r *http.Request) {
@@ -492,222 +439,12 @@ func getLunch(db *sql.DB, date time.LocalDate, placeID int64) Lunch {
 	return lunch
 }
 
-type authenticationMiddleware struct {
-	wrappedHandler http.Handler
-}
-
-type restaurantAuthenticationMiddleware struct {
-	wrappedHandler http.Handler
-}
-
-func (h authenticationMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
-	setNoCache(w)
-
-	cookie, err := r.Cookie("session")
-	if err != nil {
-		if err != http.ErrNoCookie {
-			fmt.Fprint(w, err)
-			return
-		} else {
-			err = nil
-		}
-	}
-
-	var present bool
-	var client Client
-	if cookie != nil {
-		storageMutex.RLock()
-		client, present = sessionStore[cookie.Value]
-		storageMutex.RUnlock()
-	} else {
-		present = false
-	}
-
-	if present == false {
-		cookie = &http.Cookie{
-			Name:  "session",
-			Value: uuid.NewV4().String(),
-		}
-		client = Client{loggedIn: false}
-		storageMutex.Lock()
-		sessionStore[cookie.Value] = client
-		storageMutex.Unlock()
-	}
-
-	http.SetCookie(w, cookie)
-	if client.loggedIn == false {
-		fmt.Fprint(w, loginPage)
-		return
-	}
-	if client.loggedIn == true {
-		h.wrappedHandler.ServeHTTP(w, r)
-		return
-	}
-
-}
-
-func setNoCache(w http.ResponseWriter) {
-	var epoch = gotime.Unix(0, 0).Format(gotime.RFC1123)
-	var noCacheHeaders = map[string]string{
-		"Expires":         epoch,
-		"Cache-Control":   "no-cache, private, max-age=0",
-		"Pragma":          "no-cache",
-		"X-Accel-Expires": "0",
-	}
-	for k, v := range noCacheHeaders {
-		w.Header().Set(k, v)
-	}
-}
-
-func authenticate(h http.Handler) authenticationMiddleware {
-	return authenticationMiddleware{h}
+func Authenticate(h http.Handler) http.Handler {
+	return auth.Authenticate(h)
 }
 
 func authenticateRestaurant(h http.Handler) http.Handler {
-	return restaurantAuthenticationMiddleware{h}
-}
-
-func (h restaurantAuthenticationMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
-	setNoCache(w)
-
-	cookie, err := r.Cookie("rsession")
-	if err != nil {
-		if err != http.ErrNoCookie {
-			fmt.Fprint(w, err)
-		} else {
-			http.Redirect(w, r, "/restaurant/login_form", 301)
-		}
-		return
-	}
-
-	user, present := sessionStore2[cookie.Value]
-
-	if !present {
-		http.Redirect(w, r, "/restaurant/login_form", 301)
-		return
-	}
-
-	r = r.WithContext(context.WithValue(r.Context(), "user", user))
-	h.wrappedHandler.ServeHTTP(w, r)
-
-}
-
-func handleLogin(w http.ResponseWriter, r *http.Request) {
-
-	setNoCache(w)
-
-	cookie, err := r.Cookie("session")
-	if err != nil {
-		if err != http.ErrNoCookie {
-			fmt.Fprint(w, err)
-			return
-		} else {
-			err = nil
-		}
-	}
-	var present bool
-	var client Client
-	if cookie != nil {
-		storageMutex.RLock()
-		client, present = sessionStore[cookie.Value]
-		storageMutex.RUnlock()
-	} else {
-		present = false
-	}
-
-	if present == false {
-		cookie = &http.Cookie{
-			Name:  "session",
-			Value: uuid.NewV4().String(),
-		}
-		client = Client{loggedIn: false}
-		storageMutex.Lock()
-		sessionStore[cookie.Value] = client
-		storageMutex.Unlock()
-	}
-	http.SetCookie(w, cookie)
-	err = r.ParseForm()
-	if err != nil {
-		fmt.Fprint(w, err)
-		return
-	}
-
-	if subtle.ConstantTimeCompare([]byte(r.FormValue("password")), []byte("password123")) == 1 {
-		client.loggedIn = true
-		storageMutex.Lock()
-		sessionStore[cookie.Value] = client
-		storageMutex.Unlock()
-		http.Redirect(w, r, "/admin/places", 301)
-	} else {
-		fmt.Fprintln(w, "Wrong password.")
-	}
-
-}
-
-func handleLogout(w http.ResponseWriter, r *http.Request) {
-
-	var epoch = gotime.Unix(0, 0).Format(gotime.RFC1123)
-
-	var noCacheHeaders = map[string]string{
-		"Expires":         epoch,
-		"Cache-Control":   "no-cache, private, max-age=0",
-		"Pragma":          "no-cache",
-		"X-Accel-Expires": "0",
-	}
-
-	for k, v := range noCacheHeaders {
-		w.Header().Set(k, v)
-	}
-
-	cookie, err := r.Cookie("session")
-	if err != nil {
-		if err != http.ErrNoCookie {
-			fmt.Fprint(w, err)
-			return
-		} else {
-			err = nil
-		}
-	}
-
-	var present bool
-	if cookie != nil {
-		storageMutex.RLock()
-		_, present = sessionStore[cookie.Value]
-		storageMutex.RUnlock()
-	} else {
-		present = false
-	}
-
-	if present == true {
-		client := Client{loggedIn: false}
-		storageMutex.Lock()
-		sessionStore[cookie.Value] = client
-		storageMutex.Unlock()
-	}
-	http.Redirect(w, r, "/", 301)
-
-}
-
-func handleRestaurantLogout(w http.ResponseWriter, r *http.Request) {
-
-	setNoCache(w)
-
-	cookie, err := r.Cookie("rsession")
-	if err != nil {
-		if err != http.ErrNoCookie {
-			fmt.Fprint(w, err)
-			return
-		} else {
-			err = nil
-		}
-	} else {
-		delete(sessionStore2, cookie.Value)
-	}
-
-	http.Redirect(w, r, "/restaurant/login_form", 301)
-
+	return auth.AuthenticateRestaurant(h)
 }
 
 type LunchForEdition struct {
@@ -718,3 +455,5 @@ type LunchForEdition struct {
 	Weekday string
 	PlaceID int64
 }
+
+
