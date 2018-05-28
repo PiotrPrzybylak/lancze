@@ -121,7 +121,12 @@ func main() {
 
 		price, err := strconv.ParseFloat(r.Form.Get("price"), 64)
 		if err != nil {
-			panic(err)
+			if err != nil {
+				print("ERROR: Błędna cena!")
+				print(err)
+				http.Redirect(w, r, "/restaurant/edit?error=Błędna cena", 301)
+				return;
+			}
 		}
 
 		sqlStatement := `
@@ -174,7 +179,12 @@ func main() {
 		priceString = strings.Replace(priceString, ",", ".", -1)
 		price, err := strconv.ParseFloat(priceString, 64)
 		if err != nil {
-			panic(err)
+			if err != nil {
+				print("ERROR: Błędna cena!")
+				print(err)
+				http.Redirect(w, r, "/restaurant/edit?error=Błędna cena", 301)
+				return;
+			}
 		}
 
 		sqlStatement := `
@@ -241,10 +251,16 @@ func handleRestaurantEdit(w http.ResponseWriter, r *http.Request) {
 
 	dateString := r.URL.Query().Get("date")
 	var chosenDate time.LocalDate
+	var err error
 	if dateString == "" {
 		chosenDate = time.NewLocalDate(gotime.Now().Date())
 	} else {
-		chosenDate = time.MustParseLocalDate(dateString)
+		chosenDate, err = time.ParseLocalDate(dateString)
+		if err != nil {
+			print(err)
+			http.Redirect(w, r, "/restaurant/edit?error=Błędna data", 301)
+			return;
+		}
 	}
 
 	t, err := template.ParseFiles("server/restaurant.html")
@@ -264,6 +280,7 @@ func handleRestaurantEdit(w http.ResponseWriter, r *http.Request) {
 	values["today"] = today
 	values["lunch"] = getLunch(db, today, placeID)
 	values["restaurant"] = places[placeID]
+	values["error"] = r.URL.Query().Get("error")
 
 	date := today
 	dates := []LunchForEdition{}
