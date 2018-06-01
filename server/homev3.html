@@ -155,6 +155,16 @@
     </div >
 {{end}}
 
+    <div class="zone-name"><h5>Piotrkowska 217</h5></div>
+{{range .offers_off2}}
+    <div class="dania2">
+        <table class="table">
+            <tr><th class="tooltipaa">{{.Place}} <span class="adres"><br/>ul. {{.PlaceWithZone.Address}}</span><span class="tooltiptext"><h3>{{.Place}}</h3> <p>tel: <p> <p>ul. </p></span></th><th style="text-align: right;">{{.PriceFormatted}}&nbsp;PLN</th></tr>
+            <tr><td colspan="2">{{.Name}}</td></tr>
+        </table>
+    </div >
+{{end}}
+
     <div class="zone-name"><h5>Łódź</h5></div>
 {{range .offers_lodz}}
     <div class="dania2">

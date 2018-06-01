@@ -344,6 +344,7 @@ func renderHome(home_template string, r *http.Request, db *sql.DB, w http.Respon
 	values := map[string]interface{}{}
 	values["offers_off"] = lunchesByZone["off"]
 	values["offers_centrum"] = lunchesByZone["centrum"]
+	values["offers_off2"] = lunchesByZone["off2"]
 	values["offers_lodz"] = lunchesByZone["lodz"]
 	values["date"] = date
 	t.Execute(w, values)
