@@ -68,7 +68,7 @@ func main() {
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		renderHome("server/homev3.html", r, db, w)
+		renderHome("server/home.html", r, db, w)
 	})
 
 	http.Handle("/admin", admins.Authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
