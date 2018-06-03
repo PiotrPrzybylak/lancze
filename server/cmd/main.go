@@ -42,6 +42,7 @@ type Place struct {
 	Name    string
 	Zone    string
 	Address string
+	Phone string
 }
 
 var db *sql.DB
@@ -404,7 +405,7 @@ func getPlaces(db *sql.DB) map[int64]string {
 }
 
 func getPlacesWithZone(db *sql.DB) map[int64]Place {
-	placesRows, err := db.Query("SELECT id, name, zone, address FROM places")
+	placesRows, err := db.Query("SELECT id, name, zone, address, phone FROM places")
 	if err != nil {
 		panic(err)
 	}
@@ -413,8 +414,12 @@ func getPlacesWithZone(db *sql.DB) map[int64]Place {
 	for placesRows.Next() {
 		var place Place
 		var placeID int64
-		if err := placesRows.Scan(&placeID, &place.Name, &place.Zone, &place.Address); err != nil {
+		var phone sql.NullString
+		if err := placesRows.Scan(&placeID, &place.Name, &place.Zone, &place.Address, &phone); err != nil {
 			panic(err)
+		}
+		if (phone.Valid) {
+			place.Phone = phone.String
 		}
 		places[placeID] = place
 	}
