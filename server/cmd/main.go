@@ -42,7 +42,7 @@ type Place struct {
 	Name    string
 	Zone    string
 	Address string
-	Phone string
+	Phone   string
 }
 
 var db *sql.DB
@@ -126,7 +126,7 @@ func main() {
 				print("ERROR: Błędna cena!")
 				print(err)
 				http.Redirect(w, r, "/restaurant/edit?error=Błędna cena", 301)
-				return;
+				return
 			}
 		}
 
@@ -184,7 +184,7 @@ func main() {
 				print("ERROR: Błędna cena!")
 				print(err)
 				http.Redirect(w, r, "/restaurant/edit?error=Błędna cena", 301)
-				return;
+				return
 			}
 		}
 
@@ -260,7 +260,7 @@ func handleRestaurantEdit(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			print(err)
 			http.Redirect(w, r, "/restaurant/edit?error=Błędna data", 301)
-			return;
+			return
 		}
 	}
 
@@ -342,11 +342,18 @@ func renderHome(home_template string, r *http.Request, db *sql.DB, w http.Respon
 		lunchesByZone[lunch.PlaceWithZone.Zone] = append(lunchesByZone[lunch.PlaceWithZone.Zone], lunch)
 	}
 
+	type Zone struct {
+		Name   string
+		Offers []Lunch
+	}
+
 	values := map[string]interface{}{}
-	values["offers_off"] = lunchesByZone["off"]
-	values["offers_centrum"] = lunchesByZone["centrum"]
-	values["offers_off2"] = lunchesByZone["off2"]
-	values["offers_lodz"] = lunchesByZone["lodz"]
+	values["zones"] = []Zone{
+		{"OFF Piotrkowska", lunchesByZone["off"]},
+		{"Centrum", lunchesByZone["centrum"]},
+		{"Piotrkowska 217", lunchesByZone["off2"]},
+		{"Łódź", lunchesByZone["lodz"]},
+	}
 	values["date"] = date
 	t.Execute(w, values)
 }
@@ -418,7 +425,7 @@ func getPlacesWithZone(db *sql.DB) map[int64]Place {
 		if err := placesRows.Scan(&placeID, &place.Name, &place.Zone, &place.Address, &phone); err != nil {
 			panic(err)
 		}
-		if (phone.Valid) {
+		if phone.Valid {
 			place.Phone = phone.String
 		}
 		places[placeID] = place
