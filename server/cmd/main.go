@@ -342,6 +342,8 @@ func renderHome(home_template string, r *http.Request, db *sql.DB, w http.Respon
 		lunchesByZone[lunch.PlaceWithZone.Zone] = append(lunchesByZone[lunch.PlaceWithZone.Zone], lunch)
 	}
 
+	lunchesByZone["lodz"] = append(lunchesByZone["lodz"], lunchesByZone["off2"]...)
+
 	type Zone struct {
 		Name   string
 		Offers []Lunch
@@ -351,7 +353,7 @@ func renderHome(home_template string, r *http.Request, db *sql.DB, w http.Respon
 	values["zones"] = []Zone{
 		{"OFF Piotrkowska", lunchesByZone["off"]},
 		{"Centrum", lunchesByZone["centrum"]},
-		{"Piotrkowska 217", lunchesByZone["off2"]},
+		//{"Piotrkowska 217", lunchesByZone["off2"]},
 		{"Łódź", lunchesByZone["lodz"]},
 	}
 	values["date"] = date
