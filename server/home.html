@@ -137,17 +137,17 @@
 
 {{range .zones}}
     <div class="zone-name"><h5>{{.Name}}</h5></div>
-{{range .Offers}}
-    <div class="dania2">
-        <table class="table">
-            <tr><th class="tooltipaa">{{.Place}} <span class="adres"><br/>ul. {{.PlaceWithZone.Address}} <a href="tel:{{.PlaceWithZone.Phone}}">{{.PlaceWithZone.Phone}}</a></span><span class="tooltiptext"><h3>{{.Place}}</h3> <p>tel: <p> <p>ul. </p></span></th><th style="text-align: right;">{{.PriceFormatted}}&nbsp;PLN</th></tr>
-            <tr><td colspan="2">{{.Name}}</td></tr>
-        </table>
-    </div >
-{{end}}
+    {{range .Offers}}
+        <div class="dania2">
+            <table class="table">
+                <tr><th class="tooltipaa">{{.Place}} <span class="adres"><br/>ul. {{.PlaceWithZone.Address}} <a href="tel:{{.PlaceWithZone.Phone}}">{{.PlaceWithZone.Phone}}</a></span><span class="tooltiptext"><h3>{{.Place}}</h3> <p>tel: <p> <p>ul. </p></span></th><th style="text-align: right;">{{.PriceFormatted}}&nbsp;PLN</th></tr>
+                <tr><td colspan="2">{{.Name}}</td></tr>
+            </table>
+        </div >
+    {{end}}
 {{end}}
 
-    <div style="text-align: center" class="dania3"><a href="https://lancze.herokuapp.com/restaurant/edit">Dodaj menu</a>
+    <div style="text-align: center" class="dania3"><a href="/restaurant/edit">Dodaj menu</a>
     </div>
 
     <div style='clear:both'></div>
